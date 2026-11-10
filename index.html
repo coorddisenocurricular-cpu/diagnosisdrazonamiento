@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7">
+<meta name="robots" content="noindex,nofollow">
+<title>Diagnóstico de razonamiento</title>
+<style>
+  /* Sistema visual: gris, azul y blanco. Superficies de iOS (fondo agrupado, tarjetas blancas,
+     filetes de medio punto), vidrio esmerilado en las barras fijas y una sola familia de azul. */
+  :root{
+    --fondo:#F2F2F7;
+    --superficie:#FFFFFF;
+    --tinta:#1C1C1E;
+    --tinta-2:#3A3A3C;
+    --gris:#6E6E73;
+    --gris-medio:#AEAEB2;
+    --gris-claro:#E5E5EA;
+    --gris-suave:#F2F2F7;
+    --azul:#0A6AE0;
+    --azul-osc:#0A4FB0;
+    --azul-vivo:#2F8CFF;
+    --azul-claro:#E8F1FD;
+    --azul-tenue:rgba(10,106,224,.12);
+    --filete:rgba(60,60,67,.14);
+    --radio:20px;
+    --sombra:0 1px 2px rgba(0,0,0,.04), 0 10px 28px -14px rgba(28,28,30,.22);
+    --sombra-alta:0 2px 4px rgba(0,0,0,.05), 0 18px 40px -16px rgba(28,28,30,.28);
+    --fuente:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif:ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --resorte:cubic-bezier(.32,.72,0,1);
+    --suave:cubic-bezier(.4,0,.2,1);
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  [hidden]{display:none!important}
+  body{
+    font-family:var(--fuente);
+    background:
+      radial-gradient(1100px 520px at 50% -140px, #E3EDFB 0%, rgba(227,237,251,0) 70%),
+      var(--fondo);
+    background-attachment:fixed;
+    color:var(--tinta);
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    text-rendering:optimizeLegibility;
+    line-height:1.45;
+    min-height:100svh;
+    /* Protección: nada se selecciona ni se arrastra */
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
+  }
+  input{-webkit-user-select:text;user-select:text}
+  img,svg{-webkit-user-drag:none;user-drag:none}
+  button{font-family:inherit}
+  h1,h2,h3{text-wrap:balance}
+  p{text-wrap:pretty}
+
+  @media print{
+    body *{display:none!important}
+    body::before{content:"Este contenido no se puede imprimir.";display:block;padding:48px;font:16px sans-serif;color:#000}
+  }
+
+  /* ---------- Marca de agua (identifica la sesión en cualquier foto o captura) ---------- */
+  #marca{position:fixed;inset:0;z-index:60;pointer-events:none;background-repeat:repeat}
+
+  /* ---------- Estructura ---------- */
+  .lienzo{
+    width:100%;max-width:880px;margin:0 auto;
+    padding:8px clamp(16px,4vw,28px) calc(132px + env(safe-area-inset-bottom));
+  }
+  .lienzo.inicio{
+    max-width:680px;
+    padding:calc(clamp(32px,7vh,64px) + env(safe-area-inset-top)) clamp(16px,4vw,24px) calc(132px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- Portada ---------- */
+  .eyebrow{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--azul);margin:0 0 14px}
+  h1{
+    font-family:var(--serif);
+    font-size:clamp(38px,6vw,60px);
+    line-height:1.02;letter-spacing:-.035em;font-weight:500;
+    margin:0 0 18px;color:var(--tinta);
+  }
+  .intro{font-size:clamp(16px,2vw,18px);color:var(--gris);margin:0 0 28px;max-width:46ch;line-height:1.55}
+
+  .ficha{
+    display:flex;align-items:center;gap:18px;
+    background:var(--superficie);border:.5px solid var(--filete);border-radius:var(--radio);
+    padding:16px 22px;box-shadow:var(--sombra);margin-bottom:24px;
+  }
+  .ficha .num{
+    font-family:var(--serif);font-size:54px;font-weight:500;letter-spacing:-.05em;line-height:.9;
+    background:linear-gradient(160deg,var(--azul-vivo) 0%,var(--azul-osc) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-variant-numeric:tabular-nums;
+  }
+  .ficha .det{font-size:14px;color:var(--gris)}
+  .ficha .det b{display:block;font-size:16px;color:var(--tinta);font-weight:600;letter-spacing:-.015em}
+
+  /* Tarjetas: lista agrupada de iOS */
+  .tarjeta{
+    background:var(--superficie);border:.5px solid var(--filete);border-radius:var(--radio);
+    padding:4px 20px;box-shadow:var(--sombra);margin-bottom:18px;
+  }
+  .fila{padding:15px 0;border-bottom:.5px solid var(--filete)}
+  .fila:last-child{border-bottom:none}
+  .fila b{display:block;font-size:16px;font-weight:600;letter-spacing:-.015em}
+  .fila span{display:block;font-size:14.5px;color:var(--gris);margin-top:3px;line-height:1.45}
+
+  .campo{padding:14px 0;border-bottom:.5px solid var(--filete)}
+  .campo:last-child{border-bottom:none}
+  label{display:block;font-size:13px;font-weight:600;letter-spacing:-.005em;color:var(--tinta-2);margin-bottom:8px}
+  label .req{color:var(--azul);margin-left:2px}
+  input{
+    width:100%;font-family:inherit;font-size:16.5px;color:var(--tinta);
+    background:var(--gris-suave);border:1.5px solid transparent;border-radius:12px;
+    padding:12px 14px;transition:border-color .2s var(--suave), background .2s var(--suave), box-shadow .2s var(--suave);
+  }
+  input::placeholder{color:#A1A1A6}
+  input:focus{outline:none;background:var(--superficie);border-color:var(--azul)}
+  input:focus-visible{box-shadow:0 0 0 4px rgba(10,106,224,.2)}
+  .ayuda{font-size:12.5px;color:var(--gris);margin:7px 0 0}
+  /* El rojo solo aparece en los errores de captura, que necesitan distinguirse. */
+  .error{font-size:13px;color:#B42318;margin:8px 0 0;display:none}
+  .campo.malo input{border-color:#E4A19A;background:#FFF8F7}
+  .campo.malo .error{display:block}
+
+  .conexion{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:14px;color:var(--gris);margin:0 2px 16px;line-height:1.45}
+  .conexion .punto{width:9px;height:9px;border-radius:50%;background:var(--azul);flex:0 0 9px}
+  .conexion.prueba .punto{animation:late 1.1s ease-in-out infinite}
+  .conexion.falla{color:var(--tinta-2)}
+  .conexion.falla .punto{background:var(--tinta-2)}
+  .enlace{background:none;border:none;padding:0;font:inherit;font-weight:600;color:var(--azul);cursor:pointer}
+  .enlace:focus-visible{outline:2.5px solid var(--azul);outline-offset:2px;border-radius:4px}
+  .diag-lista{list-style:none;margin:14px 0 0;padding:0}
+  .diag-lista li{padding:10px 0;border-top:.5px solid var(--filete);font-size:14.5px;line-height:1.45}
+  .diag-lista .ins{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;margin-right:8px;background:var(--azul-claro);color:var(--azul-osc)}
+  .diag-lista .ins.mal{background:#E5E5EA;color:var(--tinta)}
+  .diag-lista small{display:block;color:var(--gris);margin-top:3px}
+  .aviso-equipo{
+    background:var(--azul-claro);border:.5px solid rgba(10,106,224,.3);color:var(--azul-osc);
+    border-radius:14px;padding:14px 18px;font-size:14.5px;margin-bottom:16px;line-height:1.5;
+  }
+
+  /* ---------- Botones y barras de vidrio ---------- */
+  .barra{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    padding:12px clamp(16px,4vw,28px) calc(14px + env(safe-area-inset-bottom));
+    background:rgba(242,242,247,.78);
+    -webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+    border-top:.5px solid var(--filete);
+    display:flex;justify-content:center;
+  }
+  .barra .dentro{display:flex;align-items:center;gap:12px;width:100%;max-width:824px}
+  .barra .dentro.centro{max-width:640px}
+  .barra .cuenta{flex:1;text-align:center;font-size:13.5px;color:var(--gris);font-variant-numeric:tabular-nums}
+  .btn{
+    font-family:inherit;font-size:17px;font-weight:600;letter-spacing:-.015em;
+    border:none;border-radius:14px;padding:15px 26px;cursor:pointer;
+    transition:transform .2s var(--resorte), opacity .2s ease, box-shadow .25s var(--suave), filter .2s ease, background .2s ease;
+  }
+  .btn:active{transform:scale(.975)}
+  .btn:focus-visible{outline:3px solid rgba(10,106,224,.4);outline-offset:2px}
+  .btn[disabled]{opacity:.4;cursor:default;box-shadow:none;transform:none}
+  .btn.prim{
+    color:#fff;min-width:210px;
+    background:linear-gradient(180deg,var(--azul-vivo) 0%,var(--azul) 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 1px 2px rgba(10,106,224,.45), 0 10px 22px -10px rgba(10,106,224,.7);
+  }
+  .btn.ancho{width:100%}
+  .btn.suave{color:var(--azul);background:var(--azul-tenue);min-width:112px}
+  @media (hover:hover){
+    .btn.prim:not([disabled]):hover{filter:brightness(1.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 1px 2px rgba(10,106,224,.45), 0 14px 26px -10px rgba(10,106,224,.75)}
+    .btn.suave:not([disabled]):hover{background:rgba(10,106,224,.18)}
+  }
+
+  /* ---------- Progreso ---------- */
+  .tope{
+    position:sticky;top:0;z-index:30;
+    display:flex;gap:clamp(12px,3vw,22px);max-width:none;margin:0 auto;
+    padding:calc(14px + env(safe-area-inset-top)) max(clamp(16px,4vw,28px), calc((100vw - 880px)/2 + 28px)) 12px;
+    background:rgba(242,242,247,.78);
+    -webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);
+    border-bottom:.5px solid var(--filete);
+  }
+  .grupo{flex:1;min-width:0}
+  .gl{display:block;font-size:12.5px;font-weight:600;letter-spacing:-.005em;color:var(--gris);margin-bottom:2px;transition:color .3s var(--suave)}
+  .grupo.ahora .gl{color:var(--azul)}
+  .pips{display:flex;gap:4px}
+  .pip{flex:1;height:22px;padding:7px 0;background:none;border:none;cursor:pointer;border-radius:6px}
+  .pip i{display:block;height:6px;border-radius:3px;background:#D1D1D6;transition:background .35s var(--suave), transform .35s var(--resorte), box-shadow .35s var(--suave)}
+  .pip.parcial i{background:#9DC4F7}
+  .pip.hecho i{background:var(--azul)}
+  .pip.actual i{transform:scaleY(1.5);box-shadow:0 0 0 3px rgba(10,106,224,.22)}
+  .pip:focus-visible{outline:2.5px solid var(--azul);outline-offset:1px}
+  @media (hover:hover){ .pip:hover i{background:var(--gris-medio)} .pip.hecho:hover i{background:var(--azul-osc)} }
+
+  /* ---------- El caso ---------- */
+  .caso{
+    background:var(--superficie);border:.5px solid var(--filete);border-radius:26px;
+    padding:clamp(20px,3.6vw,40px);box-shadow:var(--sombra-alta);
+    animation:entrar .55s var(--resorte) both;
+  }
+  .meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-bottom:18px}
+  .chip{font-size:13px;font-weight:600;letter-spacing:-.005em;color:var(--azul-osc);background:var(--azul-claro);border-radius:999px;padding:5px 12px}
+  .tipo{font-size:13px;color:var(--gris)}
+
+  .enunciado{
+    font-family:var(--serif);
+    font-size:clamp(19px,2.2vw,25px);line-height:1.42;font-weight:500;letter-spacing:-.015em;
+    margin:0 0 20px;max-width:62ch;
+  }
+  .premisas{background:var(--gris-suave);border-radius:16px;padding:4px 20px;margin:0 0 24px}
+  .prem{display:flex;gap:16px;align-items:baseline;padding:12px 0;border-bottom:.5px solid var(--filete)}
+  .prem:last-child{border-bottom:none}
+  .prem .et{flex:0 0 24px;font-size:13px;font-weight:600;color:var(--azul);font-variant-numeric:tabular-nums}
+  .prem .et.largo{flex-basis:104px;color:var(--gris)}
+  .prem p{margin:0;font-family:var(--serif);font-size:clamp(17px,1.9vw,19.5px);line-height:1.5;max-width:60ch}
+  .prem.falta p{color:var(--azul);font-style:italic;font-family:var(--fuente);font-size:16px}
+
+  .consigna{font-size:clamp(17px,1.9vw,19px);font-weight:600;letter-spacing:-.02em;margin:2px 0 4px;line-height:1.35}
+  .pista{font-size:13.5px;color:var(--gris);margin:0 0 16px}
+
+  /* Opción única / múltiple */
+  .op{
+    display:grid;grid-template-columns:30px 1fr;gap:15px;align-items:center;
+    width:100%;text-align:left;margin:0 0 10px;padding:15px 18px;
+    font-size:16.5px;line-height:1.42;color:var(--tinta);
+    background:var(--gris-suave);border:1.5px solid transparent;border-radius:14px;cursor:pointer;
+    transition:background .25s var(--suave), border-color .25s var(--suave), box-shadow .25s var(--suave), transform .2s var(--resorte);
+  }
+  .op:active{transform:scale(.99)}
+  .op:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(10,106,224,.22);border-color:var(--azul)}
+  .op[aria-checked="true"]{background:var(--azul-claro);border-color:var(--azul);box-shadow:0 0 0 4px rgba(10,106,224,.1)}
+  @media (hover:hover){ .op:not([aria-checked="true"]):hover{background:#E9E9EF} }
+  .mk{
+    position:relative;width:28px;height:28px;border-radius:50%;
+    border:1.5px solid #C7C7CC;display:grid;place-items:center;
+    font-size:12.5px;font-weight:600;color:var(--gris);background:var(--superficie);
+    transition:background .3s var(--resorte), border-color .25s ease, color .2s ease, transform .3s var(--resorte);
+  }
+  .op.multi .mk{border-radius:9px}
+  .mk svg{position:absolute;width:15px;height:15px;opacity:0;transform:scale(.5);transition:opacity .2s ease, transform .35s var(--resorte)}
+  .mk svg path{stroke:#fff;stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .op[aria-checked="true"] .mk{background:var(--azul);border-color:var(--azul);transform:scale(1.04)}
+  .op[aria-checked="true"] .mk b{opacity:0}
+  .op[aria-checked="true"] .mk svg{opacity:1;transform:scale(1)}
+
+  /* Se sigue / no se sigue (control segmentado de iOS) */
+  .item-j{
+    display:flex;align-items:center;gap:24px;justify-content:space-between;
+    padding:16px 0;border-bottom:.5px solid var(--filete);
+  }
+  .item-j:last-child{border-bottom:none;padding-bottom:4px}
+  .item-j .t{margin:0;font-family:var(--serif);font-size:clamp(17px,1.9vw,18.5px);line-height:1.5;flex:1;max-width:58ch}
+  .seg{
+    position:relative;display:grid;grid-template-columns:1fr 1fr;flex:0 0 300px;
+    background:rgba(118,118,128,.12);border-radius:11px;padding:2px;
+  }
+  .pastilla{
+    position:absolute;top:2px;left:2px;width:calc(50% - 2px);height:calc(100% - 4px);
+    background:var(--superficie);border-radius:9px;
+    box-shadow:0 3px 8px rgba(0,0,0,.12), 0 3px 1px rgba(0,0,0,.04);
+    opacity:0;transform:scale(.96);
+    transition:transform .35s var(--resorte), opacity .2s ease;
+  }
+  .seg.activo .pastilla{opacity:1;transform:scale(1)}
+  .seg[data-valor="no"] .pastilla{transform:translateX(100%)}
+  .seg .o{
+    position:relative;z-index:1;background:none;border:none;border-radius:9px;
+    font-size:15px;font-weight:500;color:var(--tinta);padding:10px 4px;cursor:pointer;transition:color .25s ease, font-weight .1s;
+  }
+  .seg .o[aria-checked="true"]{color:var(--azul-osc);font-weight:600}
+  .seg .o:focus-visible{outline:2.5px solid var(--azul);outline-offset:1px}
+
+  /* Ordenar */
+  .paso{
+    display:flex;align-items:center;gap:16px;background:var(--gris-suave);
+    border-radius:14px;padding:12px 14px 12px 16px;margin-bottom:10px;border:1.5px solid transparent;
+  }
+  .paso.movido{animation:resalta .7s var(--resorte)}
+  .paso .pos{
+    flex:0 0 30px;height:30px;border-radius:50%;display:grid;place-items:center;
+    font-size:13.5px;font-weight:700;color:var(--azul);background:var(--superficie);
+    box-shadow:0 1px 3px rgba(0,0,0,.12);font-variant-numeric:tabular-nums;
+  }
+  .paso p{margin:0;flex:1;font-family:var(--serif);font-size:clamp(17px,1.9vw,18.5px);line-height:1.45}
+  .mueve{display:flex;gap:6px}
+  .mueve button{
+    width:38px;height:38px;border-radius:50%;border:.5px solid var(--filete);background:var(--superficie);
+    display:grid;place-items:center;cursor:pointer;color:var(--azul);box-shadow:0 1px 2px rgba(0,0,0,.06);
+    transition:transform .2s var(--resorte), opacity .2s ease, background .2s ease;
+  }
+  .mueve button:active{transform:scale(.9)}
+  .mueve button[disabled]{opacity:.3;cursor:default;box-shadow:none}
+  .mueve button:focus-visible{outline:2.5px solid var(--azul);outline-offset:2px}
+  @media (hover:hover){ .mueve button:not([disabled]):hover{background:var(--azul-claro)} }
+  .mueve svg{width:18px;height:18px}
+  .mueve svg path{stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+  /* Relacionar */
+  .rel{padding:16px 0;border-bottom:.5px solid var(--filete)}
+  .rel:last-child{border-bottom:none}
+  .rel .t{margin:0 0 12px;font-family:var(--serif);font-size:clamp(17px,1.9vw,18.5px);line-height:1.5;max-width:62ch}
+  .pastillas{display:flex;flex-wrap:wrap;gap:8px}
+  .pc{
+    font-size:14.5px;font-weight:500;color:var(--tinta);background:var(--gris-suave);
+    border:1.5px solid transparent;border-radius:999px;padding:9px 16px;cursor:pointer;
+    transition:background .25s var(--suave), color .25s ease, border-color .25s ease, transform .2s var(--resorte);
+  }
+  .pc:active{transform:scale(.96)}
+  .pc[aria-checked="true"]{color:#fff;background:linear-gradient(180deg,var(--azul-vivo),var(--azul));border-color:transparent;box-shadow:0 4px 10px -4px rgba(10,106,224,.6)}
+  .pc:focus-visible{outline:2.5px solid var(--azul);outline-offset:2px}
+  @media (hover:hover){ .pc:not([aria-checked="true"]):hover{background:#E9E9EF} }
+
+  /* ---------- Intersticial y revisión ---------- */
+  .parte{padding:clamp(10px,5vw,64px) 4px;max-width:680px;animation:entrar .6s var(--resorte) both}
+  .parte h2{
+    font-family:var(--serif);font-size:clamp(42px,7vw,72px);line-height:1;
+    letter-spacing:-.04em;font-weight:500;margin:0 0 18px;
+  }
+  .parte .lead{font-size:clamp(16px,2vw,19px);color:var(--gris);margin:0 0 26px;max-width:48ch;line-height:1.55}
+  .parte .tarjeta{max-width:560px}
+  .parte .btn{margin-top:10px}
+
+  .revision h2{font-family:var(--serif);font-size:clamp(32px,4.4vw,46px);letter-spacing:-.03em;font-weight:500;margin:6px 0 10px}
+  .revision .lead{font-size:16px;color:var(--gris);margin:0 0 24px}
+  .grupo-rev{margin-bottom:18px}
+  .grupo-rev h3{font-size:14px;font-weight:600;letter-spacing:-.005em;color:var(--gris);margin:4px 2px 10px}
+  .celdas{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .celda{
+    border:1px dashed #C7C7CC;background:rgba(255,255,255,.6);border-radius:14px;
+    padding:12px 6px 10px;cursor:pointer;text-align:center;color:var(--gris);
+    transition:transform .2s var(--resorte), background .2s ease, border-color .2s ease;
+  }
+  .celda:active{transform:scale(.96)}
+  .celda b{display:block;font-family:var(--serif);font-size:24px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .celda small{display:block;font-size:11.5px;margin-top:2px}
+  .celda.hecho{border:1px solid transparent;background:linear-gradient(180deg,var(--azul-vivo),var(--azul));color:#fff;box-shadow:0 8px 16px -10px rgba(10,106,224,.7)}
+  .celda.parcial{border:1px solid rgba(10,106,224,.35);background:var(--azul-claro);color:var(--azul-osc)}
+  .celda:focus-visible{outline:2.5px solid var(--azul);outline-offset:2px}
+  @media (hover:hover){ .celda:not(.hecho):hover{background:var(--superficie);border-color:var(--gris-medio)} }
+
+  .estado{
+    display:flex;align-items:center;gap:10px;font-size:14px;color:var(--gris);
+    background:var(--superficie);border:.5px solid var(--filete);border-radius:14px;padding:12px 16px;margin:0 0 14px;
+  }
+  .estado .punto{width:9px;height:9px;border-radius:50%;background:var(--azul);flex:0 0 9px;animation:late 1.1s ease-in-out infinite}
+  .estado.listo .punto{animation:none;background:var(--azul-osc)}
+  .estado.falla{background:var(--gris-suave);border-color:var(--gris-medio);color:var(--tinta-2)}
+  .estado.falla .punto{animation:none;background:var(--tinta-2)}
+
+  /* ---------- Resultado ---------- */
+  .lienzo.resultado{max-width:720px;padding:calc(clamp(28px,6vh,48px) + env(safe-area-inset-top)) clamp(16px,4vw,22px) 72px}
+  .confirma{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;color:var(--gris);margin:0 0 26px}
+  .palomita{
+    width:34px;height:34px;border-radius:50%;flex:0 0 34px;
+    background:linear-gradient(180deg,var(--azul-vivo),var(--azul));display:grid;place-items:center;
+    box-shadow:0 8px 16px -8px rgba(10,106,224,.8);
+  }
+  .palomita svg{width:17px;height:17px}
+  .palomita path{
+    stroke:#fff;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:32;stroke-dashoffset:32;animation:trazo .5s .22s var(--resorte) forwards;
+  }
+  .resultado h2{
+    font-family:var(--serif);font-size:clamp(32px,5vw,50px);line-height:1.04;
+    letter-spacing:-.035em;font-weight:500;margin:0 0 14px;
+  }
+  .resultado .lead{font-size:clamp(16px,2vw,17.5px);color:var(--gris);margin:0 0 26px;max-width:52ch;line-height:1.55}
+
+  .rc{padding:18px 0;border-bottom:.5px solid var(--filete);animation:entrar .6s var(--resorte) both}
+  .rc:nth-child(2){animation-delay:.08s}
+  .rc:nth-child(3){animation-delay:.16s}
+  .rc:last-child{border-bottom:none}
+  .rc .cab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .rc .cab b{font-size:17px;font-weight:600;letter-spacing:-.018em}
+  .rc .cab em{font-style:normal;font-size:13.5px;color:var(--gris);font-variant-numeric:tabular-nums}
+  .rc .cab .etq{margin:0 auto 0 10px;font-size:12.5px;font-weight:600;color:var(--azul-osc);background:var(--azul-claro);border-radius:999px;padding:3px 11px;align-self:center}
+  .riel{height:8px;border-radius:4px;background:var(--gris-claro);overflow:hidden}
+  .riel i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#5AA9FF,var(--azul));transition:width 1.1s var(--resorte)}
+  .rc p{margin:12px 0 0;font-size:14.5px;color:var(--gris);line-height:1.5;max-width:58ch}
+
+  .resumen{font-family:var(--serif);font-size:clamp(17px,2.2vw,20px);line-height:1.5;letter-spacing:-.012em;margin:22px 2px 24px;max-width:56ch}
+
+  .ruta{padding:22px clamp(18px,3vw,26px) 24px;margin-top:6px}
+  .ruta .et{font-size:13px;font-weight:600;color:var(--azul);margin:0}
+  .ruta h3{font-family:var(--serif);font-size:clamp(22px,3vw,28px);line-height:1.18;letter-spacing:-.025em;font-weight:500;margin:6px 0 12px}
+  .ruta .dato{font-size:13.5px;color:var(--gris);margin:0 0 12px}
+  .ruta p.txt{margin:0;font-size:15.5px;line-height:1.55;max-width:58ch}
+  .ruta .btn{margin-top:20px}
+
+  .invita{
+    margin-top:16px;padding:20px clamp(18px,3vw,26px);border-radius:var(--radio);
+    background:var(--azul-claro);border:.5px solid rgba(10,106,224,.25);
+  }
+  .invita h3{font-family:var(--serif);font-size:22px;letter-spacing:-.025em;font-weight:500;margin:0 0 6px;color:var(--azul-osc)}
+  .invita p{margin:0;font-size:15.5px;line-height:1.55;max-width:58ch}
+  .pie-res{font-size:13px;color:var(--gris);margin:22px 0 0;max-width:60ch;line-height:1.5}
+  .nota-prueba{background:var(--azul-claro);border:.5px solid rgba(10,106,224,.3);color:var(--azul-osc);border-radius:14px;padding:12px 16px;font-size:14px;margin:0 0 22px;line-height:1.45}
+
+  /* ---------- Velo: pausa y capturas (opaco: debe ocultar el examen) ---------- */
+  .velo{
+    position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;
+    background:
+      radial-gradient(900px 420px at 50% -120px, #E3EDFB 0%, rgba(227,237,251,0) 70%),
+      var(--fondo);
+  }
+  .velo .caja{text-align:center;max-width:460px;animation:entrar .5s var(--resorte) both}
+  .velo h2{font-family:var(--serif);font-size:clamp(28px,4vw,36px);letter-spacing:-.03em;font-weight:500;margin:0 0 10px}
+  .velo p{color:var(--gris);font-size:16px;margin:0 0 22px;line-height:1.5}
+
+  @keyframes trazo{to{stroke-dashoffset:0}}
+  @keyframes entrar{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes resalta{0%{background:#D6E6FB;transform:scale(1.012)}100%{background:var(--gris-suave);transform:none}}
+  @keyframes late{50%{opacity:.35}}
+  .aparece{animation:entrar .6s var(--resorte) both}
+  .aparece:nth-of-type(2){animation-delay:.07s}
+  .aparece:nth-of-type(3){animation-delay:.14s}
+  .aparece:nth-of-type(4){animation-delay:.21s}
+
+  /* ---------- Adaptación a pantallas ---------- */
+  @media (max-width:900px){
+    .item-j{flex-direction:column;align-items:stretch;gap:12px}
+    .seg{flex:0 0 auto}
+  }
+  @media (max-width:640px){
+    .celdas{grid-template-columns:repeat(3,1fr)}
+    .barra .cuenta{display:none}
+    .barra .dentro{gap:10px}
+    .barra .btn{padding:14px 18px;font-size:16px}
+    .btn.prim{min-width:0;flex:1}
+    .btn.suave{min-width:0}
+    .op{padding:13px 14px;gap:12px}
+    .paso{padding:10px 10px 10px 12px;gap:12px}
+    .prem{flex-direction:column;gap:2px}
+    .prem .et.largo{flex-basis:auto}
+    .ficha{padding:14px 18px}
+    .ficha .num{font-size:46px}
+  }
+  @media (max-width:420px){
+    .gl{font-size:11.5px}
+    .tope{gap:10px}
+    .rc .cab{flex-direction:column;align-items:flex-start;gap:6px}
+    .rc .cab .etq{margin:0}
+  }
+  @media (max-height:640px) and (orientation:landscape){
+    .lienzo.inicio{padding-top:24px}
+  }
+  /* Sin vidrio esmerilado: fondo sólido */
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .barra,.tope{background:var(--fondo)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition-duration:.01ms!important}
+  }
+</style>
+</head>
+<body>
+
+<div id="marca" aria-hidden="true" hidden></div>
+
+<!-- ═════════ PORTADA ═════════ -->
+<section id="pantalla-inicio">
+  <main class="lienzo inicio">
+    <header class="aparece">
+      <p class="eyebrow">Diagnóstico para coordinación</p>
+      <h1>Razonar con validez</h1>
+      <p class="intro">Dieciocho situaciones de trabajo académico para ver cómo analizas, sintetizas y deduces. No hay respuestas abiertas ni se evalúa tu opinión: se evalúa qué se sigue de qué.</p>
+      <div class="ficha">
+        <span class="num">18</span>
+        <span class="det"><b>Reactivos de razonamiento</b>seis por competencia, unos 45 minutos</span>
+      </div>
+    </header>
+
+    <section class="tarjeta aparece" aria-label="Competencias">
+      <div class="fila"><b>Análisis</b><span>Descomponer un argumento: qué afirma, qué supone y dónde se sostiene o se rompe.</span></div>
+      <div class="fila"><b>Síntesis</b><span>Reunir premisas dispersas en una conclusión: la más fuerte que se puede sostener, y no más.</span></div>
+      <div class="fila"><b>Deducción</b><span>Aplicar reglas a casos concretos y determinar qué se sigue necesariamente.</span></div>
+    </section>
+
+    <form id="formulario" class="tarjeta aparece" novalidate autocomplete="off">
+      <div class="campo" id="c-nombre">
+        <label for="nombre">Nombre completo<span class="req">*</span></label>
+        <input id="nombre" type="text" autocomplete="off" placeholder="Como aparece en tu nombramiento">
+        <p class="error">Escribe tu nombre completo para poder registrar tu diagnóstico.</p>
+      </div>
+      <div class="campo" id="c-correo">
+        <label for="correo">Correo institucional<span class="req">*</span></label>
+        <input id="correo" type="email" inputmode="email" autocomplete="off" placeholder="nombre@institucion.mx">
+        <p class="error">Revisa el correo, parece incompleto.</p>
+      </div>
+      <div class="campo" id="c-programa">
+        <label for="programa">Programa o área que coordinas<span class="req">*</span></label>
+        <input id="programa" type="text" autocomplete="off" placeholder="Ejemplo: Lic. en Gastronomía">
+        <p class="error">Indica el programa o área que coordinas.</p>
+      </div>
+    </form>
+
+    <section class="tarjeta aparece" aria-label="Antes de empezar">
+      <div class="fila"><b>Las premisas siempre se toman como verdaderas</b><span>Aunque no lo parezcan. Lo que se evalúa es si la conclusión se sigue, no si el mundo es así.</span></div>
+      <div class="fila"><b>El examen se abre en pantalla completa</b><span>Si sales de ella o cambias de ventana, se pausa y queda registrado.</span></div>
+      <div class="fila"><b>No se puede copiar, imprimir ni capturar</b><span>Cada pantalla lleva tu nombre como marca de agua. No recargues la página: el avance no se guarda.</span></div>
+    </section>
+
+    <p class="conexion" id="conexion" hidden role="status"><span class="punto"></span><span id="conexion-txt"></span><button type="button" class="enlace" id="btn-reconectar" hidden>Volver a comprobar</button></p>
+
+    <section class="tarjeta" id="diag" hidden aria-label="Diagnóstico de conexión">
+      <div class="fila"><b>Diagnóstico de conexión</b><span>Para quien administra el examen. Comprueba que la URL de Apps Script, la versión publicada y el permiso de escritura estén bien, antes de aplicar el examen.</span></div>
+      <div class="fila"><button type="button" class="btn suave" id="btn-diag" style="min-width:0">Probar conexión y envío</button><ul class="diag-lista" id="diag-lista"></ul></div>
+    </section>
+
+    <div class="aviso-equipo" id="aviso-equipo" hidden></div>
+  </main>
+  <div class="barra"><div class="dentro centro">
+    <button class="btn prim ancho" id="btn-comenzar" type="button">Comenzar el diagnóstico</button>
+  </div></div>
+</section>
+
+<!-- ═════════ EXAMEN ═════════ -->
+<section id="pantalla-examen" hidden>
+  <div class="tope" id="tope"></div>
+  <main class="lienzo" id="escena"></main>
+  <div class="barra" id="barra-examen"><div class="dentro">
+    <button class="btn suave" id="btn-ant" type="button">Anterior</button>
+    <span class="cuenta" id="cuenta"></span>
+    <button class="btn prim" id="btn-sig" type="button">Siguiente</button>
+  </div></div>
+  <div class="barra" id="barra-revision" hidden><div class="dentro">
+    <button class="btn suave" id="btn-volver" type="button">Volver al examen</button>
+    <span class="cuenta" id="cuenta-rev"></span>
+    <button class="btn prim" id="btn-enviar" type="button">Enviar respuestas</button>
+  </div></div>
+</section>
+
+<!-- ═════════ CONFIRMACIÓN ═════════ -->
+<section id="pantalla-gracias" hidden>
+  <main class="lienzo resultado" id="gracias"></main>
+</section>
+
+<!-- ═════════ PAUSA ═════════ -->
+<div class="velo" id="pausa" hidden role="alertdialog" aria-labelledby="pausa-t">
+  <div class="caja">
+    <h2 id="pausa-t">Examen en pausa</h2>
+    <p id="pausa-msg">Saliste de la pantalla completa o cambiaste de ventana. El tiempo se detuvo y la salida quedó registrada.</p>
+    <button class="btn prim" id="btn-reanudar" type="button">Volver al examen</button>
+  </div>
+</div>
+
+<div class="velo" id="cortina" hidden aria-live="assertive">
+  <div class="caja"><h2>Captura desactivada</h2><p>Las capturas de pantalla no están permitidas en este examen. El intento quedó registrado.</p></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   1. Configuración
+   ════════════════════════════════════════════════════════════════ */
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbw0pYSVQISf8Tq7NiTaTbva4sGq8FgDm4A7XE3EaXlOSWGKG0TFNkPeTor_XLjmrCVS/exec";
+const SIN_CONFIGURAR  = !URL_APPS_SCRIPT || URL_APPS_SCRIPT.indexOf('PEGA_AQUI') === 0;
+
+/* Debe coincidir con VERSION en Codigo.gs. Si el script publicado es de otra versión, la página avisa
+   antes de que alguien conteste el examen. */
+const VERSION_SCRIPT = '2026-11-10.2';
+
+const CFG = {
+  pantallaCompleta: true,   // exige pantalla completa y pausa si se sale
+  vigilarConsola:   true,   // pausa si detecta herramientas de desarrollo abiertas en pantalla completa
+  marcaDeAgua:      true,   // nombre, correo y código en cada pantalla
+  anchoMinimo:      1000    // lado mayor de la pantalla, en píxeles; menos que eso se considera teléfono
+};
+
+/* ════════════════════════════════════════════════════════════════
+   2. Banco de reactivos
+   La CLAVE de respuestas no está aquí: vive en Codigo.gs (servidor).
+   Los ids de opciones/ítems deben coincidir con los de la clave.
+   ════════════════════════════════════════════════════════════════ */
+const COMPETENCIAS = [
+  {id:'A', nombre:'Análisis',  parte:'Parte 1 de 3', lead:'Descompón argumentos: identifica qué se afirma, qué se supone y dónde el razonamiento se sostiene o se rompe.'},
+  {id:'S', nombre:'Síntesis',  parte:'Parte 2 de 3', lead:'Reúne premisas dispersas en una sola conclusión: la más fuerte que se puede sostener, y no más.'},
+  {id:'D', nombre:'Deducción', parte:'Parte 3 de 3', lead:'Aplica reglas a casos concretos y determina qué se sigue necesariamente de ellas.'}
+];
+
+/* Cada competencia va en tres pares de dificultad creciente: básico, medio y alto. */
+const BANCO = [
+
+/* ───────────── ANÁLISIS ───────────── */
+{id:'A1',comp:'A',tipo:'juicio',etiqueta:'Válido o no válido',
+ enunciado:'Un argumento es válido si, de ser verdaderas sus premisas, la conclusión tendría que serlo también. Que las premisas sean ciertas en la vida real no entra en juego.',
+ consigna:'Decide si cada argumento es válido.',
+ etiquetas:['Válido','No válido'],
+ items:[
+  ['3','“Si se entrega el acta, el grupo se cierra. El grupo de Ética no se cerró. Por lo tanto, el acta no se entregó.”'],
+  ['1','“Si el grupo alcanza el cupo mínimo, se abre. El grupo de Lógica se abrió. Por lo tanto, alcanzó el cupo mínimo.”'],
+  ['4','“Algunos coordinadores son investigadores. Algunos investigadores son docentes de asignatura. Por lo tanto, algunos coordinadores son docentes de asignatura.”'],
+  ['2','“Todo docente de Ciencias pertenece a la academia de Ciencias. La maestra Ruiz es docente de Ciencias. Por lo tanto, pertenece a la academia de Ciencias.”']
+ ]},
+
+{id:'A2',comp:'A',tipo:'una',etiqueta:'Encuentra el paso que falla',
+ enunciado:'Una dirección justifica un pago adicional con este razonamiento. Los pasos 1, 2 y 4 son datos aceptados; los pasos 3 y 5 se presentan como conclusiones.',
+ premisas:[
+  ['1','Si un docente es de tiempo completo, entonces participa en una academia.'],
+  ['2','Si un docente participa en una academia, entonces entrega reporte semestral.'],
+  ['3','Por lo tanto, si un docente entrega reporte semestral, entonces es de tiempo completo.'],
+  ['4','La maestra Vega entrega reporte semestral.'],
+  ['5','Por lo tanto, la maestra Vega es de tiempo completo.']
+ ],
+ consigna:'¿Cuál es el primer paso que no se sigue de los anteriores?',
+ opciones:[
+  ['a','El paso 5.'],
+  ['b','El paso 2, porque el reporte semestral no debería depender de la academia.'],
+  ['c','El paso 3.'],
+  ['d','Ninguno: cada paso se sigue de los anteriores.']
+ ]},
+
+{id:'A3',comp:'A',tipo:'una',etiqueta:'Completa el argumento',
+ enunciado:'Un coordinador recibe este argumento al que le falta una premisa.',
+ premisas:[
+  ['Premisa','Si Ruiz imparte Lógica, entonces Vega no imparte Ética.'],
+  ['Premisa','~Aquí falta una premisa.'],
+  ['Conclusión','Por lo tanto, Ruiz no imparte Lógica.']
+ ],
+ consigna:'¿Qué premisa, agregada a la primera, hace válido el argumento?',
+ opciones:[
+  ['a','Si Vega imparte Ética, entonces Ruiz no imparte Lógica.'],
+  ['b','Vega no imparte Ética.'],
+  ['c','Ruiz imparte Ética.'],
+  ['d','Vega imparte Ética.']
+ ]},
+
+{id:'A5',comp:'A',tipo:'rel',etiqueta:'Relaciona',
+ enunciado:'Un coordinador revisa dos reglas del reglamento de apertura de grupos.',
+ premisas:[
+  ['Regla 1','Un grupo solo se abre si llega a 15 inscritos.'],
+  ['Regla 2','Todo grupo que se abre tiene aula asignada.']
+ ],
+ consigna:'Con solo estas dos reglas, relaciona cada caso con lo que se puede afirmar.',
+ pista:'Contesta únicamente con lo que se sigue de las reglas, no con lo que sería razonable suponer.',
+ items:[
+  ['3','El grupo de Álgebra se abrió. ¿Llegó a 15 inscritos?'],
+  ['2','El grupo de Ética llegó a 15 inscritos. ¿Se abre?'],
+  ['4','El grupo de Historia no tiene aula asignada. ¿Llegó a 15 inscritos?'],
+  ['1','El grupo de Lógica no llegó a 15 inscritos. ¿Se abre?']
+ ],
+ banco:[['si','Sí, con seguridad'],['no','No, con seguridad'],['ns','No se puede saber']]},
+
+{id:'A4',comp:'A',tipo:'multi',etiqueta:'Selección múltiple',
+ enunciado:'Un coordinador revisa este argumento sobre la certificación para impartir clases en línea.',
+ premisas:[
+  ['Dato','Un docente es de tiempo completo o de asignatura, no ambas cosas.'],
+  ['Premisa','Todos los docentes que aprueban la certificación pueden impartir en línea.'],
+  ['Premisa','Algunos docentes de asignatura pueden impartir en línea.'],
+  ['Conclusión','Por lo tanto, algunos docentes de asignatura aprobaron la certificación.']
+ ],
+ consigna:'Marca todas las situaciones que, de ser reales, mostrarían que el argumento no es válido.',
+ pista:'Una situación sirve si cumple las premisas y a la vez hace falsa la conclusión.',
+ opciones:[
+  ['a','Ningún docente de asignatura puede impartir en línea.'],
+  ['b','Algunos docentes de asignatura imparten en línea sin haber hecho la certificación, y quienes sí la aprobaron son todos de tiempo completo.'],
+  ['c','Todos los docentes de asignatura que imparten en línea tienen la certificación.'],
+  ['d','Nadie en el plantel ha aprobado todavía la certificación, y algunos docentes de asignatura imparten en línea por otra vía.'],
+  ['e','Todos los docentes certificados imparten en línea, y algunos de ellos son de asignatura.']
+ ]},
+
+{id:'A6',comp:'A',tipo:'una',etiqueta:'Opción única',
+ enunciado:'Un coordinador sospecha que el reglamento de materias se contradice a sí mismo.',
+ premisas:[
+  ['R1','Si una materia es optativa, no puede ser seriada.'],
+  ['R2','Toda materia con laboratorio es seriada.'],
+  ['R3','Existe al menos una materia optativa que tiene laboratorio.'],
+  ['R4','Ninguna materia seriada tiene más de 6 créditos.']
+ ],
+ consigna:'¿Cuál es el conjunto más pequeño de reglas que no pueden cumplirse a la vez?',
+ pista:'El más pequeño: si quitas cualquiera de sus reglas, la contradicción desaparece.',
+ opciones:[
+  ['a','R1, R2 y R4'],
+  ['b','R2 y R3'],
+  ['c','R1, R2 y R3'],
+  ['d','R2, R3 y R4']
+ ]},
+
+/* ───────────── SÍNTESIS ───────────── */
+{id:'S1',comp:'S',tipo:'una',etiqueta:'Opción única',
+ enunciado:'El reglamento de regularización se publicó en tres artículos separados.',
+ premisas:[
+  ['1','Si un alumno reprueba dos parciales, entra a regularización.'],
+  ['2','Si un alumno entra a regularización, paga la cuota de asesorías.'],
+  ['3','Si un alumno paga la cuota de asesorías, se le habilita la plataforma de tutorías.']
+ ],
+ consigna:'¿Cuál es la conclusión más fuerte que reúne los tres artículos?',
+ opciones:[
+  ['a','Si un alumno reprueba dos parciales, entonces se le habilita la plataforma de tutorías.'],
+  ['b','Si a un alumno se le habilita la plataforma de tutorías, entonces reprobó dos parciales.'],
+  ['c','Si un alumno no reprueba dos parciales, entonces no se le habilita la plataforma de tutorías.'],
+  ['d','Todos los alumnos reprueban dos parciales y se les habilita la plataforma.']
+ ]},
+
+{id:'S3',comp:'S',tipo:'orden',etiqueta:'Ordena los pasos',
+ enunciado:'Esto consta en el expediente de un proyecto de academia.',
+ premisas:[
+  ['Dato 1','El proyecto se aprueba o se regresa a la academia.'],
+  ['Dato 2','Si se regresa a la academia, se corrige antes del viernes.'],
+  ['Dato 3','Si se corrige antes del viernes, se dictamina el lunes.'],
+  ['Dato 4','No se dictaminó el lunes.']
+ ],
+ consigna:'Ordena los pasos que llevan a concluir que el proyecto se aprobó.',
+ pasos:[
+  ['t3','No se regresó a la academia.'],
+  ['t1','Se parte de que no hubo dictamen el lunes.'],
+  ['t4','El proyecto se aprobó.'],
+  ['t2','No se corrigió antes del viernes.']
+ ]},
+
+{id:'S2',comp:'S',tipo:'juicio',etiqueta:'Se sigue o no se sigue',
+ enunciado:'De los 12 docentes de una academia, 9 usan la plataforma A y 8 usan la plataforma B. No se sabe nada más.',
+ consigna:'Decide si cada afirmación se sigue necesariamente de esos datos.',
+ etiquetas:['Se sigue','No se sigue'],
+ items:[
+  ['3','Exactamente 5 docentes usan las dos plataformas.'],
+  ['1','Al menos 5 docentes usan las dos plataformas.'],
+  ['5','Al menos un docente usa solo la plataforma B.'],
+  ['2','Como máximo 8 docentes usan las dos plataformas.'],
+  ['4','Al menos un docente usa solo la plataforma A.']
+ ]},
+
+{id:'S4',comp:'S',tipo:'una',etiqueta:'Opción única',
+ enunciado:'Un coordinador quiere justificar que se emitió el visto bueno, y cuenta con estas cuatro premisas.',
+ premisas:[
+  ['1','Si el docente entrega su planeación, la academia la revisa.'],
+  ['2','Si la academia la revisa, se emite el visto bueno.'],
+  ['3','Si el docente entrega su planeación, se emite el visto bueno.'],
+  ['4','El docente entregó su planeación.']
+ ],
+ consigna:'¿Cuál es el conjunto más pequeño de premisas con el que ya basta para concluir que se emitió el visto bueno?',
+ opciones:[
+  ['a','Las premisas 1, 2 y 4'],
+  ['b','Las premisas 2 y 4'],
+  ['c','Las premisas 1 y 4'],
+  ['d','Las premisas 3 y 4']
+ ]},
+
+{id:'S5',comp:'S',tipo:'una',etiqueta:'Opción única',
+ enunciado:'El reglamento tiene dos reglas separadas. La comisión quiere sustituirlas por una sola que diga exactamente lo mismo, ni más ni menos.',
+ premisas:[
+  ['1','Quien no tiene 80 % de asistencia pierde el derecho a examen ordinario.'],
+  ['2','Quien no tiene promedio mínimo de 6 en parciales pierde el derecho a examen ordinario.']
+ ],
+ consigna:'¿Cuál regla única equivale a las dos anteriores?',
+ opciones:[
+  ['a','Tiene derecho a examen ordinario quien cumple la asistencia o el promedio mínimo.'],
+  ['b','Pierde el derecho a examen ordinario quien incumple al menos uno de los dos requisitos.'],
+  ['c','Pierde el derecho a examen ordinario solo quien incumple ambos requisitos.'],
+  ['d','Tiene derecho a examen ordinario todo alumno que cumple los dos requisitos.']
+ ]},
+
+{id:'S6',comp:'S',tipo:'multi',etiqueta:'Selección múltiple',
+ enunciado:'Para una reunión de academia, la dirección solo sabe lo siguiente sobre quién asistirá.',
+ premisas:[
+  ['1','Si Ortega asiste, Vega asiste.'],
+  ['2','Si Vega asiste, Ruiz no asiste.'],
+  ['3','Asiste Ruiz o asiste Ortega (al menos uno de los dos).']
+ ],
+ consigna:'Marca todo lo que se sigue necesariamente.',
+ opciones:[
+  ['a','Asiste exactamente una persona.'],
+  ['b','Ortega y Ruiz no asisten los dos a la vez.'],
+  ['c','Vega asiste.'],
+  ['d','Si Vega asiste, entonces Ortega asiste.'],
+  ['e','Asiste Ruiz o asiste Vega.']
+ ]},
+
+/* ───────────── DEDUCCIÓN ───────────── */
+{id:'D1',comp:'D',tipo:'una',etiqueta:'Opción única',
+ enunciado:'Un coordinador revisa el expediente de una academia.',
+ premisas:[
+  ['Regla','Si un programa fue aprobado por la academia, entonces tiene su anexo firmado.'],
+  ['Dato','El programa de Estadística no tiene su anexo firmado.']
+ ],
+ consigna:'¿Qué se sigue necesariamente?',
+ opciones:[
+  ['a','El programa fue aprobado, pero falta firmar el anexo.'],
+  ['b','No se puede saber si fue aprobado, porque la regla solo habla de los programas aprobados.'],
+  ['c','El programa de Estadística no fue aprobado por la academia.'],
+  ['d','El programa será aprobado cuando se firme el anexo.']
+ ]},
+
+{id:'D2',comp:'D',tipo:'una',etiqueta:'Opción única',
+ enunciado:'Se está cubriendo una vacante docente.',
+ premisas:[
+  ['Regla','La vacante se cubre con un docente interno o con uno externo.'],
+  ['Regla','Si se cubre con un docente externo, hay que abrir convocatoria.'],
+  ['Dato','No se abrió convocatoria.']
+ ],
+ consigna:'¿Qué se sigue necesariamente?',
+ opciones:[
+  ['a','La vacante quedará sin cubrir.'],
+  ['b','No se puede concluir nada, porque faltan datos sobre los docentes internos.'],
+  ['c','La vacante se cubrirá con un docente externo, pero sin convocatoria.'],
+  ['d','La vacante se cubrirá con un docente interno.']
+ ]},
+
+{id:'D3',comp:'D',tipo:'juicio',etiqueta:'Se sigue o no se sigue',
+ enunciado:'Regla de becas: un alumno recibe la beca si y solo si tiene promedio mínimo de 9 y no tiene adeudos.',
+ consigna:'En cada caso, decide si la conclusión se sigue necesariamente de la regla.',
+ etiquetas:['Se sigue','No se sigue'],
+ items:[
+  ['4','Dani no recibió la beca. Entonces, el promedio de Dani es menor que 9.'],
+  ['1','Ana recibió la beca. Entonces, Ana no tiene adeudos.'],
+  ['5','Eli tiene promedio de 9.5 y no tiene adeudos. Entonces, Eli recibió la beca.'],
+  ['2','Beto tiene promedio de 9.4. Entonces, Beto recibió la beca.'],
+  ['3','Carla tiene adeudos. Entonces, Carla no recibió la beca.']
+ ]},
+
+{id:'D4',comp:'D',tipo:'multi',etiqueta:'Selección múltiple',
+ enunciado:'Un coordinador de horarios tiene estas reglas para abrir un grupo nuevo.',
+ premisas:[
+  ['1','Si el grupo se abre en el turno matutino, se usa el aula 4.'],
+  ['2','Si el grupo se abre en el turno vespertino, se usa el laboratorio.'],
+  ['3','El grupo se abre en el turno matutino o en el vespertino.']
+ ],
+ consigna:'Marca todo lo que se sigue necesariamente.',
+ opciones:[
+  ['a','Si se usa el laboratorio, entonces el grupo se abre en el turno vespertino.'],
+  ['b','Se usa el aula 4 o se usa el laboratorio.'],
+  ['c','Se usa el aula 4.'],
+  ['d','No se usan el aula 4 y el laboratorio al mismo tiempo.'],
+  ['e','Si no se usa el aula 4, entonces se usa el laboratorio.']
+ ]},
+
+{id:'D5',comp:'D',tipo:'multi',etiqueta:'Selección múltiple',
+ enunciado:'Tres afirmaciones sobre la plantilla docente de una escuela.',
+ premisas:[
+  ['1','Todos los coordinadores de carrera son docentes de tiempo completo.'],
+  ['2','Ningún docente de tiempo completo imparte más de 20 horas frente a grupo.'],
+  ['3','Algunos docentes de asignatura imparten más de 20 horas frente a grupo.']
+ ],
+ consigna:'Marca todo lo que se sigue necesariamente.',
+ opciones:[
+  ['a','Algunos coordinadores de carrera son docentes de asignatura.'],
+  ['b','Ningún coordinador de carrera imparte más de 20 horas frente a grupo.'],
+  ['c','Todo docente que no es de tiempo completo imparte más de 20 horas.'],
+  ['d','Algunos docentes de asignatura no son de tiempo completo.'],
+  ['e','Algunos docentes de asignatura no son coordinadores de carrera.']
+ ]},
+
+{id:'D6',comp:'D',tipo:'una',etiqueta:'Opción única',
+ enunciado:'Tres docentes —Ortega, Vega y Ruiz— se reparten tres turnos distintos: matutino, vespertino y sabatino, uno para cada quien.',
+ premisas:[
+  ['1','Ortega no puede tomar el sabatino.'],
+  ['2','Ruiz no puede tomar el sabatino.'],
+  ['3','Si Ruiz toma el matutino, Ortega toma el sabatino.'],
+  ['4','Vega no puede tomar el matutino.']
+ ],
+ consigna:'Solo una asignación cumple las cuatro reglas. ¿Cuál es?',
+ opciones:[
+  ['a','Ortega sabatino, Vega vespertino y Ruiz matutino.'],
+  ['b','Ortega matutino, Vega sabatino y Ruiz vespertino.'],
+  ['c','Ortega matutino, Vega vespertino y Ruiz sabatino.'],
+  ['d','Ortega vespertino, Vega sabatino y Ruiz matutino.']
+ ]}
+];
+
+const QS = Object.fromEntries(BANCO.map(q => [q.id, q]));
+const COMP = Object.fromEntries(COMPETENCIAS.map(c => [c.id, c]));
+const LETRAS = ['A','B','C','D','E'];
+const PISTAS = {
+  una:'Elige una sola respuesta.',
+  multi:'Puede haber más de una correcta. Marca todas las que correspondan.',
+  juicio:'',
+  orden:'Usa las flechas para subir o bajar cada paso.',
+  rel:'Elige una etiqueta para cada argumento.'
+};
+const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.8l4.4 4.4L19 7.6"/></svg>';
+const UP    = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5l6-6 6 6"/></svg>';
+const DOWN  = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>';
+
+/* ════════════════════════════════════════════════════════════════
+   3. Utilidades
+   ════════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const espera = ms => new Promise(r => setTimeout(r, ms));
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function semillaAleatoria(){
+  try{ return crypto.getRandomValues(new Uint32Array(1))[0] >>> 0; }
+  catch(e){ return Math.floor(Math.random() * 4294967296) >>> 0; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   4. Estado
+   ════════════════════════════════════════════════════════════════ */
+let sesion = null;            // todo lo del intento en curso
+let enExamen = false;         // vigilancia activa
+let pausado = false;
+let pausaDesde = 0;
+let ultimoIngreso = 0;        // evita falsos positivos justo al entrar a pantalla completa
+let ultimoPaquete = null;
+
+function construir(datos){
+  const semilla = semillaAleatoria();
+  const rnd = mulberry32(semilla);
+  const mezclar = a => { a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+  /* Orden de preguntas: competencias en secuencia; dentro de cada una, los tres pares de dificultad
+     se mantienen, pero el orden dentro de cada par es aleatorio. */
+  const orden = [];
+  COMPETENCIAS.forEach(c => {
+    const qs = BANCO.filter(q => q.comp === c.id);
+    for(let i=0;i<qs.length;i+=2){
+      const par = [qs[i], qs[i+1]];
+      if(rnd() < .5) par.reverse();
+      par.forEach(q => orden.push(q.id));
+    }
+  });
+
+  const vista = {};
+  BANCO.forEach(q => {
+    const v = {};
+    if(q.tipo==='una' || q.tipo==='multi') v.opc = mezclar(q.opciones.map(o => o[0]));
+    if(q.tipo==='juicio' || q.tipo==='rel') v.items = mezclar(q.items.map(o => o[0]));
+    if(q.tipo==='orden'){
+      /* El orden correcto es el de los ids en orden natural (t1, t2, t3, t4).
+         Se baraja hasta que el orden inicial no sea ya la respuesta. */
+      const correcto = q.pasos.map(x => x[0]).sort().join();
+      let p, n = 0;
+      do { p = mezclar(q.pasos.map(x => x[0])); n++; } while(p.join() === correcto && n < 30);
+      if(p.join() === correcto) p.reverse();
+      v.pasos = p;
+    }
+    vista[q.id] = v;
+  });
+
+  return {
+    datos, semilla, codigo: semilla.toString(36).toUpperCase().slice(-5),
+    orden, vista,
+    resp:{}, tocado:{}, tq:{}, visto:{},
+    idx:0, pantalla:'parte', tInicio:Date.now(), t0:Date.now(), pausaSeg:0, inc:[], enviado:false
+  };
+}
+
+function registrar(evento){
+  if(!sesion || sesion.inc.length >= 80) return;
+  sesion.inc.push({t: Math.round((Date.now()-sesion.t0)/1000), e: evento, q: sesion.orden[sesion.idx] || ''});
+}
+
+function cerrarTiempo(){
+  if(!sesion || sesion.pantalla!=='pregunta' || pausado) return;
+  const id = sesion.orden[sesion.idx];
+  sesion.tq[id] = (sesion.tq[id] || 0) + (Date.now() - sesion.tInicio) / 1000;
+}
+
+/* 0 = sin responder · 1 = incompleta · 2 = completa */
+function estadoPreg(id){
+  const q = QS[id], r = sesion.resp[id];
+  if(q.tipo==='una')  return r ? 2 : 0;
+  if(q.tipo==='multi')return (r && r.length) ? 2 : 0;
+  if(q.tipo==='orden')return sesion.tocado[id] ? 2 : 0;
+  const n = q.items.length, h = r ? Object.keys(r).length : 0;
+  return h===0 ? 0 : (h===n ? 2 : 1);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   5. Dibujo de cada reactivo
+   ════════════════════════════════════════════════════════════════ */
+function premHTML(q){
+  if(!q.premisas) return '';
+  return '<div class="premisas">' + q.premisas.map(p => {
+    const lab = Array.isArray(p) ? p[0] : '';
+    let txt = Array.isArray(p) ? p[1] : p;
+    const falta = txt.charAt(0) === '~';
+    if(falta) txt = txt.slice(1);
+    return '<div class="prem' + (falta ? ' falta' : '') + '">' +
+      (lab ? '<span class="et' + (lab.length > 2 ? ' largo' : '') + '">' + esc(lab) + '</span>' : '') +
+      '<p>' + esc(txt) + '</p></div>';
+  }).join('') + '</div>';
+}
+
+function cuerpoHTML(q, v){
+  if(q.tipo==='una' || q.tipo==='multi'){
+    const multi = q.tipo==='multi', mapa = Object.fromEntries(q.opciones);
+    return '<div role="' + (multi ? 'group' : 'radiogroup') + '" aria-label="Opciones">' + v.opc.map((id,i) =>
+      '<button type="button" class="op' + (multi ? ' multi' : '') + '" role="' + (multi ? 'checkbox' : 'radio') + '" aria-checked="false" data-a="' + q.tipo + '" data-q="' + q.id + '" data-v="' + id + '">' +
+      '<span class="mk"><b>' + LETRAS[i] + '</b>' + CHECK + '</span><span>' + esc(mapa[id]) + '</span></button>'
+    ).join('') + '</div>';
+  }
+  if(q.tipo==='juicio'){
+    const mapa = Object.fromEntries(q.items);
+    return '<div>' + v.items.map(id =>
+      '<div class="item-j"><p class="t">' + esc(mapa[id]) + '</p>' +
+      '<div class="seg" role="radiogroup" data-q="' + q.id + '" data-i="' + id + '"><span class="pastilla"></span>' +
+      '<button type="button" class="o" role="radio" aria-checked="false" data-a="juicio" data-q="' + q.id + '" data-i="' + id + '" data-v="si">' + esc(q.etiquetas[0]) + '</button>' +
+      '<button type="button" class="o" role="radio" aria-checked="false" data-a="juicio" data-q="' + q.id + '" data-i="' + id + '" data-v="no">' + esc(q.etiquetas[1]) + '</button>' +
+      '</div></div>'
+    ).join('') + '</div>';
+  }
+  if(q.tipo==='rel'){
+    const mapa = Object.fromEntries(q.items);
+    return '<div>' + v.items.map(id =>
+      '<div class="rel"><p class="t">' + esc(mapa[id]) + '</p><div class="pastillas" role="radiogroup">' +
+      q.banco.map(b => '<button type="button" class="pc" role="radio" aria-checked="false" data-a="rel" data-q="' + q.id + '" data-i="' + id + '" data-v="' + b[0] + '">' + esc(b[1]) + '</button>').join('') +
+      '</div></div>'
+    ).join('') + '</div>';
+  }
+  if(q.tipo==='orden') return '<div id="lista-orden"></div>';
+  return '';
+}
+
+function casoHTML(q, v){
+  const pista = q.pista || PISTAS[q.tipo];
+  return '<article class="caso" data-q="' + q.id + '">' +
+    '<div class="meta"><span class="chip">' + COMP[q.comp].nombre + '</span><span class="tipo">' + esc(q.etiqueta) + '</span></div>' +
+    '<p class="enunciado">' + esc(q.enunciado) + '</p>' +
+    premHTML(q) +
+    '<p class="consigna">' + esc(q.consigna) + '</p>' +
+    (pista ? '<p class="pista">' + esc(pista) + '</p>' : '<div style="height:12px"></div>') +
+    cuerpoHTML(q, v) +
+    '</article>';
+}
+
+function pintarOrden(q, movido){
+  const mapa = Object.fromEntries(q.pasos), v = sesion.vista[q.id], cont = $('#lista-orden');
+  if(!cont) return;
+  cont.innerHTML = v.pasos.map((id,i) =>
+    '<div class="paso' + (id===movido ? ' movido' : '') + '"><span class="pos">' + (i+1) + '</span><p>' + esc(mapa[id]) + '</p>' +
+    '<div class="mueve">' +
+    '<button type="button" data-a="sube" data-q="' + q.id + '" data-i="' + id + '" aria-label="Subir paso"' + (i===0 ? ' disabled' : '') + '>' + UP + '</button>' +
+    '<button type="button" data-a="baja" data-q="' + q.id + '" data-i="' + id + '" aria-label="Bajar paso"' + (i===v.pasos.length-1 ? ' disabled' : '') + '>' + DOWN + '</button>' +
+    '</div></div>'
+  ).join('');
+}
+
+/* Refleja el estado en el DOM sin reconstruirlo, para que las transiciones corran. */
+function sincronizar(q){
+  const r = sesion.resp[q.id], raiz = $('#escena');
+  if(q.tipo==='una' || q.tipo==='multi'){
+    raiz.querySelectorAll('.op').forEach(el => {
+      const on = q.tipo==='una' ? r === el.dataset.v : !!(r && r.indexOf(el.dataset.v) >= 0);
+      el.setAttribute('aria-checked', String(on));
+    });
+  } else if(q.tipo==='juicio'){
+    raiz.querySelectorAll('.seg').forEach(seg => {
+      const val = r && r[seg.dataset.i];
+      seg.dataset.valor = val || '';
+      seg.classList.toggle('activo', !!val);
+      seg.querySelectorAll('.o').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === val)));
+    });
+  } else if(q.tipo==='rel'){
+    raiz.querySelectorAll('.pc').forEach(b => b.setAttribute('aria-checked', String(!!r && r[b.dataset.i] === b.dataset.v)));
+  } else if(q.tipo==='orden'){
+    pintarOrden(q);
+  }
+}
+
+function pintarProgreso(){
+  const actual = sesion.pantalla==='pregunta' ? sesion.orden[sesion.idx] : null;
+  $('#tope').innerHTML = COMPETENCIAS.map(c => {
+    const ids = sesion.orden.filter(id => QS[id].comp === c.id);
+    return '<div class="grupo' + (actual && QS[actual].comp===c.id ? ' ahora' : '') + '"><span class="gl">' + c.nombre + '</span><div class="pips">' +
+      ids.map(id => {
+        const i = sesion.orden.indexOf(id), e = estadoPreg(id);
+        return '<button type="button" class="pip' + (e===2 ? ' hecho' : e===1 ? ' parcial' : '') + (id===actual ? ' actual' : '') + '" data-ir="' + i + '" aria-label="Reactivo ' + (i+1) + ' de ' + sesion.orden.length + '"><i></i></button>';
+      }).join('') + '</div></div>';
+  }).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   6. Navegación
+   ════════════════════════════════════════════════════════════════ */
+function barras(cual){
+  $('#barra-examen').hidden   = cual !== 'examen';
+  $('#barra-revision').hidden = cual !== 'revision';
+}
+
+function ir(i){
+  cerrarTiempo();
+  i = Math.max(0, Math.min(sesion.orden.length - 1, i));
+  const q = QS[sesion.orden[i]];
+  if(!sesion.visto[q.comp]){ mostrarParte(q.comp, i); return; }
+  sesion.idx = i; sesion.pantalla = 'pregunta';
+  const v = sesion.vista[q.id];
+  $('#escena').innerHTML = casoHTML(q, v);
+  sincronizar(q);
+  pintarProgreso();
+  barras('examen');
+  $('#btn-ant').disabled = i === 0;
+  $('#cuenta').textContent = 'Reactivo ' + (i+1) + ' de ' + sesion.orden.length;
+  $('#btn-sig').textContent = i === sesion.orden.length - 1 ? 'Revisar respuestas' : 'Siguiente';
+  sesion.tInicio = Date.now();
+  window.scrollTo(0, 0);
+}
+
+function mostrarParte(comp, destino){
+  sesion.pantalla = 'parte';
+  const c = COMP[comp];
+  $('#escena').innerHTML =
+    '<section class="parte"><p class="eyebrow">' + c.parte + '</p><h2>' + c.nombre + '</h2><p class="lead">' + c.lead + '</p>' +
+    '<div class="tarjeta"><div class="fila"><b>Seis reactivos</b><span>De menor a mayor dificultad, en formatos distintos.</span></div>' +
+    '<div class="fila"><b>Premisas verdaderas</b><span>Tómalas como ciertas aunque no lo parezcan. Se evalúa lo que se sigue de ellas.</span></div></div>' +
+    '<button type="button" class="btn prim" id="btn-parte" data-destino="' + destino + '" data-comp="' + comp + '">Comenzar ' + c.nombre.toLowerCase() + '</button></section>';
+  pintarProgreso();
+  barras('ninguna');
+  window.scrollTo(0, 0);
+}
+
+function mostrarRevision(){
+  cerrarTiempo();
+  sesion.pantalla = 'revision';
+  const pend = sesion.orden.filter(id => estadoPreg(id) !== 2).length;
+  let h = '<section class="revision"><h2>Revisión final</h2><p class="lead">' +
+    (pend ? 'Tienes ' + pend + (pend===1 ? ' reactivo' : ' reactivos') + ' sin completar. Toca cualquiera para volver a él.' : 'Todos los reactivos están completos. Toca cualquiera si quieres cambiar una respuesta.') + '</p>' +
+    '<div class="estado" id="estado" hidden><span class="punto"></span><span id="estado-txt"></span></div>';
+  COMPETENCIAS.forEach(c => {
+    h += '<div class="grupo-rev"><h3>' + c.nombre + '</h3><div class="celdas">';
+    sesion.orden.forEach((id,i) => {
+      if(QS[id].comp !== c.id) return;
+      const e = estadoPreg(id);
+      h += '<button type="button" class="celda' + (e===2 ? ' hecho' : e===1 ? ' parcial' : '') + '" data-ir="' + i + '"><b>' + (i+1) + '</b><small>' + (e===2 ? 'Completo' : e===1 ? 'Incompleto' : 'Sin responder') + '</small></button>';
+    });
+    h += '</div></div>';
+  });
+  h += '<div class="estado falla" id="bloque-respaldo" hidden style="justify-content:space-between"><span>Si el envío sigue fallando, descarga tus respuestas y entrégalas a quien coordina.</span><button type="button" class="btn suave" id="btn-respaldo" style="padding:10px 16px;font-size:14.5px">Descargar respaldo</button></div>';
+  h += '</section>';
+  $('#escena').innerHTML = h;
+  pintarProgreso();
+  barras('revision');
+  $('#cuenta-rev').textContent = pend ? pend + ' sin completar' : 'Todo completo';
+  $('#btn-enviar').textContent = pend ? 'Enviar con ' + pend + ' sin completar' : 'Enviar respuestas';
+  window.scrollTo(0, 0);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   7. Interacción con las respuestas
+   ════════════════════════════════════════════════════════════════ */
+$('#escena').addEventListener('click', e => {
+  const parte = e.target.closest('#btn-parte');
+  if(parte){ sesion.visto[parte.dataset.comp] = true; ir(+parte.dataset.destino); return; }
+
+  const celda = e.target.closest('.celda');
+  if(celda){ if(!sesion.enviado) ir(+celda.dataset.ir); return; }
+
+  if(e.target.closest('#btn-respaldo')){ descargarRespaldo(); return; }
+
+  const b = e.target.closest('[data-a]');
+  if(!b || b.disabled) return;
+  const a = b.dataset.a, id = b.dataset.q, q = QS[id];
+
+  if(a==='una'){
+    sesion.resp[id] = b.dataset.v;
+  } else if(a==='multi'){
+    const cur = sesion.resp[id] ? sesion.resp[id].slice() : [], k = cur.indexOf(b.dataset.v);
+    if(k >= 0) cur.splice(k,1); else cur.push(b.dataset.v);
+    sesion.resp[id] = cur;
+  } else if(a==='juicio' || a==='rel'){
+    sesion.resp[id] = Object.assign({}, sesion.resp[id]);
+    sesion.resp[id][b.dataset.i] = b.dataset.v;
+  } else if(a==='sube' || a==='baja'){
+    const p = sesion.vista[id].pasos, i = p.indexOf(b.dataset.i), j = a==='sube' ? i-1 : i+1;
+    if(j < 0 || j >= p.length) return;
+    [p[i], p[j]] = [p[j], p[i]];
+    sesion.tocado[id] = true;
+    pintarOrden(q, b.dataset.i);
+    const hallar = n => $('#lista-orden [data-a="' + n + '"][data-i="' + b.dataset.i + '"]');
+    const f = hallar(a);
+    if(f && !f.disabled) f.focus();
+    else { const o = hallar(a === 'sube' ? 'baja' : 'sube'); if(o && !o.disabled) o.focus(); }
+    pintarProgreso();
+    return;
+  } else return;
+
+  sincronizar(q);
+  pintarProgreso();
+});
+
+/* Flechas dentro de un control segmentado o grupo de pastillas */
+$('#escena').addEventListener('keydown', e => {
+  if(!['ArrowLeft','ArrowRight'].includes(e.key)) return;
+  const b = e.target.closest('.seg .o, .pc');
+  if(!b) return;
+  e.preventDefault();
+  const hermanos = [...b.parentElement.querySelectorAll('.o, .pc')], i = hermanos.indexOf(b);
+  const s = hermanos[Math.max(0, Math.min(hermanos.length-1, i + (e.key==='ArrowRight' ? 1 : -1)))];
+  s.click(); s.focus();
+});
+
+$('#tope').addEventListener('click', e => {
+  const p = e.target.closest('[data-ir]');
+  if(p && !sesion.enviado) ir(+p.dataset.ir);
+});
+
+$('#btn-ant').addEventListener('click', () => ir(sesion.idx - 1));
+$('#btn-sig').addEventListener('click', () => { if(sesion.idx === sesion.orden.length - 1){ cerrarTiempo(); mostrarRevision(); } else ir(sesion.idx + 1); });
+$('#btn-volver').addEventListener('click', () => ir(sesion.orden.length - 1));
+$('#btn-enviar').addEventListener('click', enviarTodo);
+
+/* ════════════════════════════════════════════════════════════════
+   8. Envío a Google Sheets (POST no-cors + confirmación por JSONP)
+   ════════════════════════════════════════════════════════════════ */
+function respuestasCompactas(){
+  const r = {};
+  sesion.orden.forEach(id => {
+    const q = QS[id];
+    let x = sesion.resp[id];
+    if(q.tipo==='orden') x = sesion.tocado[id] ? sesion.vista[id].pasos : null;
+    if(x !== undefined && x !== null) r[id] = x;
+  });
+  return r;
+}
+
+function paquete(){
+  const tiempos = {};
+  Object.keys(sesion.tq).forEach(k => tiempos[k] = Math.round(sesion.tq[k]));
+  return {
+    envioId: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,8),
+    fecha: new Date().toISOString(),
+    agente: navigator.userAgent,
+    nombre: sesion.datos.nombre, correo: sesion.datos.correo, programa: sesion.datos.programa,
+    semilla: sesion.semilla, codigo: sesion.codigo,
+    tiempoSeg: Math.round((Date.now() - sesion.t0) / 1000),
+    pausaSeg: Math.round(sesion.pausaSeg),
+    nIncidencias: sesion.inc.length,
+    incidencias: sesion.inc,
+    tiempos,
+    respuestas: respuestasCompactas()
+  };
+}
+
+function estado(texto, clase){
+  const e = $('#estado'); if(!e) return;
+  e.hidden = false;
+  e.className = 'estado' + (clase ? ' ' + clase : '');
+  $('#estado-txt').textContent = texto;
+}
+
+/* Consulta al script por JSONP (una etiqueta <script> no está sujeta a CORS). Devuelve el objeto o null. */
+function jsonp(params, ms){
+  return new Promise(res => {
+    const cb = 'cb' + Math.random().toString(36).slice(2,9), s = document.createElement('script');
+    let hecho = false;
+    const limpia = () => { try{ delete window[cb]; }catch(e){ window[cb] = undefined; } s.remove(); };
+    window[cb] = r => { hecho = true; res(r || null); limpia(); };
+    s.onerror = () => { if(!hecho){ res(null); limpia(); } };
+    const q = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+    s.src = URL_APPS_SCRIPT + '?' + q + '&callback=' + cb + '&t=' + Date.now();
+    document.head.appendChild(s);
+    setTimeout(() => { if(!hecho){ res(null); limpia(); } }, ms || 12000);
+  });
+}
+const verificar = envioId => jsonp({accion:'verificar', envioId}, 12000);
+
+/* POST sin leer respuesta: text/plain evita el preflight y no-cors evita el bloqueo de CORS. */
+async function publicar(paquete){
+  const cuerpo = JSON.stringify(paquete);
+  try{
+    await fetch(URL_APPS_SCRIPT, {method:'POST', mode:'no-cors', keepalive: cuerpo.length < 60000, headers:{'Content-Type':'text/plain;charset=utf-8'}, body:cuerpo});
+    return true;
+  }catch(err){
+    /* Segundo camino: sendBeacon también es una petición simple y no depende de fetch. */
+    try{ return !!(navigator.sendBeacon && navigator.sendBeacon(URL_APPS_SCRIPT, new Blob([cuerpo], {type:'text/plain;charset=UTF-8'}))); }
+    catch(e){ return false; }
+  }
+}
+
+function descargarRespaldo(){
+  const p = ultimoPaquete || paquete();
+  const blob = new Blob([JSON.stringify(p, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'respaldo-diagnostico-' + sesion.codigo + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function enviarTodo(){
+  const btn = $('#btn-enviar');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  $('#btn-volver').hidden = true;
+  cerrarTiempo();
+  enExamen = false;           // el examen terminó: ya no se pausa
+  sesion.enviado = true;
+  if(!ultimoPaquete) ultimoPaquete = paquete();
+  const p = ultimoPaquete;
+
+  if(SIN_CONFIGURAR){
+    salirPC();
+    mostrarGracias(null, true);
+    return;
+  }
+
+  const falla = (texto) => {
+    estado(texto, 'falla');
+    $('#bloque-respaldo').hidden = false;
+    btn.disabled = false; btn.textContent = 'Reintentar envío';
+  };
+
+  estado('Enviando…');
+  let respuesta = null, errorServidor = '';
+  const revisar = async () => {
+    const r = await verificar(p.envioId);
+    if(r && r.ok) return r;
+    if(r && r.error) errorServidor = r.error;
+    return null;
+  };
+
+  /* Si es un reintento, quizá el primer envío sí llegó: se pregunta antes de reenviar. */
+  if(p.intentado) respuesta = await revisar();
+
+  if(!respuesta){
+    p.intentado = true;
+    if(!(await publicar(p))){ falla('No se pudo enviar. Revisa tu conexión e intenta de nuevo.'); return; }
+    for(let i = 0; i < 6 && !respuesta; i++){
+      await espera(i === 0 ? 1500 : 2200);
+      respuesta = await revisar();
+      if(!respuesta && errorServidor) break;       // el servidor ya dijo qué falló: no tiene caso esperar
+    }
+  }
+
+  if(respuesta){
+    salirPC();
+    mostrarGracias(respuesta, false);
+  } else if(errorServidor){
+    falla('El servidor no pudo guardar tus respuestas (' + errorServidor.replace(/^Error:\s*/, '') + '). No se perdió nada: descarga el respaldo y avisa a quien coordina.');
+  } else {
+    falla('El envío salió, pero no se pudo confirmar que llegara a la hoja. Reintenta (no se duplicará); si sigue igual, descarga el respaldo y avisa a quien coordina.');
+  }
+}
+
+/* ── Resultado ───────────────────────────────────────────────────
+   El servidor devuelve aciertos, ruta y (si se activa) el detalle de cada reactivo; aquí solo se redacta.
+   El tono es descriptivo: dice qué se domina y por dónde seguir. Nada aprueba ni reprueba. */
+const CURSOS = {
+  1:'Fundamentos del razonamiento válido',
+  2:'Razonamiento aplicado a la gestión académica',
+  3:'Argumentación rigurosa y enseñanza del razonamiento'
+};
+const NOMBRE_COMP = {analisis:'Análisis', sintesis:'Síntesis', deduccion:'Deducción'};
+const ORDEN_COMP = ['analisis','sintesis','deduccion'];
+
+const FORTALECER = {
+  analisis:'Es el área con menos aciertos. Conviene practicar cómo identificar qué afirma un argumento, qué supone y dónde se rompe.',
+  sintesis:'Es el área con menos aciertos. Conviene practicar cómo reunir varias reglas en una sola conclusión, sin decir de más ni de menos.',
+  deduccion:'Es el área con menos aciertos. Conviene practicar cómo aplicar reglas a cada caso y decidir con cuidado qué se sigue y qué no.'
+};
+const LINEAS = {
+  analisis:{
+    'Consolidado':'Identificas con precisión qué se afirma, qué se supone y dónde un argumento se sostiene o se rompe.',
+    'En consolidación':'Reconoces buena parte de las estructuras; buscar contraejemplos con más frecuencia te dará seguridad.',
+    'En construcción':'Hay estructuras que todavía conviene reconocer con más soltura; el curso trabaja justo eso.'},
+  sintesis:{
+    'Consolidado':'Reúnes reglas dispersas en conclusiones justas: ni de más ni de menos.',
+    'En consolidación':'Combinas bien las reglas más directas; afinar cuál es la conclusión más fuerte que se puede sostener es el siguiente paso.',
+    'En construcción':'Integrar varias reglas en una sola conclusión es una destreza que se construye con práctica guiada.'},
+  deduccion:{
+    'Consolidado':'Aplicas las reglas a casos concretos y determinas con exactitud qué se sigue.',
+    'En consolidación':'Resuelves bien los casos directos; los que combinan varias condiciones son donde más ganarás.',
+    'En construcción':'Aplicar reglas con cuidado a cada caso se entrena con ejercicios cortos y retroalimentación.'}
+};
+const DESTINO = 'Jornada de formación docente, curso de Pensamiento Analítico y Lógico';
+
+function listaNombres(claves){
+  const n = claves.map(c => NOMBRE_COMP[c]);
+  return n.length === 2 ? n[0] + ' y ' + n[1] : n.join(', ');
+}
+function fmtNum(x){ return String(Math.round(Number(x) * 100) / 100); }
+
+/* Frase de síntesis: qué área conviene fortalecer. */
+function fraseArea(p){
+  const prio = (p.ruta && p.ruta.prioridad) || [];
+  if(prio.length === 0) return 'Contestaste todos los reactivos con acierto: tus tres áreas están completas. El curso te permitirá profundizar y llevar este dominio a la enseñanza.';
+  if(prio.length >= 3) return 'Tus tres áreas quedaron parejas, así que el curso te permitirá fortalecerlas por igual.';
+  if(prio.length === 1) return 'El área con menos aciertos fue ' + NOMBRE_COMP[prio[0]] + ': es la que más se beneficiará de práctica guiada en el curso.';
+  return 'Las áreas con menos aciertos fueron ' + listaNombres(prio) + ': son las que más se beneficiarán de práctica guiada en el curso.';
+}
+
+function resultadoHTML(res){
+  const p = res.perfil, r = p.ruta || {}, prio = r.prioridad || [], hayDetalle = !!res.detalle;
+  let h = '<h2>Tu diagnóstico de razonamiento</h2>' +
+    '<p class="lead">Este resultado no aprueba ni reprueba. Muestra en qué áreas conviene fortalecer tu razonamiento para que la jornada de formación te sirva más.</p>';
+
+  h += '<section class="tarjeta" aria-label="Aciertos por competencia">';
+  ORDEN_COMP.forEach(k => {
+    const x = p[k]; if(!x) return;
+    const foco = prio.indexOf(k) >= 0 && prio.length < 3;
+    const linea = foco ? FORTALECER[k] : ((LINEAS[k] && LINEAS[k][x.nivel]) || '');
+    h += '<div class="rc"><div class="cab"><b>' + NOMBRE_COMP[k] + '</b>' +
+         (foco ? '<span class="etq">Área para fortalecer</span>' : '') +
+         '<em>' + esc(x.aciertos) + ' de 6 aciertos' + (x.parciales ? ' · ' + x.parciales + (x.parciales === 1 ? ' parcial' : ' parciales') : '') + '</em></div>' +
+         '<div class="riel"><i style="width:0" data-w="' + esc(x.pct) + '"></i></div>' +
+         (linea ? '<p>' + esc(linea) + '</p>' : '') + '</div>';
+  });
+  h += '</section><p class="resumen">' + esc(fraseArea(p)) + '</p>';
+
+  h += '<section class="tarjeta ruta" aria-label="Tu siguiente paso"><p class="et">Tu siguiente paso</p>' +
+       '<h3>Jornada de formación docente · curso de Pensamiento Analítico y Lógico</h3>' +
+       '<p class="txt">Asiste a la jornada de formación docente, al curso de Pensamiento Analítico y Lógico, y entrega estos resultados al profesor del curso: con ellos tendrá un diagnóstico de tu punto de partida y podrá acompañarte mejor.</p>' +
+       '<button type="button" class="btn prim ancho" id="btn-pdf">Descargar mis respuestas (PDF)</button>' +
+       '<p class="dato" style="margin:12px 0 0">' + (hayDetalle
+          ? 'El documento explica cada reactivo: qué respondiste, cuál era la respuesta correcta y por qué.'
+          : 'El documento resume tus resultados por competencia.') + '</p></section>';
+
+  if(r.invitacion){
+    h += '<section class="invita" aria-label="Invitación"><h3>Una invitación</h3>' +
+         '<p>Tu perfil encaja con el equipo docente de la materia Pensamiento Analítico y Lógico. Si te interesa, házselo saber a la coordinación de la jornada de formación.</p></section>';
+  }
+  h += '<p class="pie-res">Este diagnóstico mide una habilidad específica de razonamiento y no evalúa tu desempeño docente. Un acierto es un reactivo contestado correctamente por completo; un acierto parcial suma una fracción de punto.</p>';
+  return h;
+}
+
+/* Resultado de ejemplo para el modo de prueba: no incluye ninguna clave real. */
+function demoResultado(n){
+  const patrones = {
+    1:[[1,0,.5,0,1,0],[0,0,1,0,.5,0],[1,0,0,.5,0,0]],
+    2:[[1,1,.5,0,1,0],[1,0,1,.6,1,0],[1,1,.5,1,0,0]],
+    3:[[1,1,1,1,1,1],[1,1,1,1,.5,1],[1,1,1,.5,1,1]]
+  }[n];
+  const detalle = {}, perfil = {};
+  const pts = {};
+  COMPETENCIAS.forEach((c, ci) => {
+    const qs = BANCO.filter(q => q.comp === c.id);
+    let suma = 0, ac = 0, pa = 0;
+    qs.forEach((q, i) => {
+      const p = patrones[ci][i];
+      let k;
+      if(q.tipo === 'una') k = q.opciones[0][0];
+      else if(q.tipo === 'multi') k = q.opciones.slice(0,2).map(o => o[0]);
+      else if(q.tipo === 'juicio'){ k = {}; q.items.forEach(it => k[it[0]] = 'si'); }
+      else if(q.tipo === 'rel'){ k = {}; q.items.forEach(it => k[it[0]] = q.banco[0][0]); }
+      else k = q.pasos.map(x => x[0]);
+      detalle[q.id] = {p, k, x:'Texto de ejemplo. En el examen real, aquí aparece la explicación de este reactivo.'};
+      suma += p; if(p >= .999) ac++; else if(p > 0) pa++;
+    });
+    const clave = {A:'analisis', S:'sintesis', D:'deduccion'}[c.id];
+    suma = Math.round(suma * 100) / 100;
+    perfil[clave] = {pts:suma, pct:Math.round(suma/6*100), nivel: suma >= 5 ? 'Consolidado' : suma >= 3 ? 'En consolidación' : 'En construcción', aciertos:ac, parciales:pa};
+    pts[clave] = suma;
+  });
+  const total = Math.round(Object.values(pts).reduce((a,b) => a+b, 0) * 100) / 100;
+  const minimo = Math.min(...Object.values(pts));
+  perfil.total = total;
+  perfil.nota10 = Math.round(total / 18 * 100) / 10;
+  perfil.aciertos = ORDEN_COMP.reduce((a,k) => a + perfil[k].aciertos, 0);
+  perfil.ruta = {
+    curso: total >= 15 && minimo >= 4 ? 3 : total >= 9 ? 2 : 1,
+    prioridad: minimo < 6 ? ORDEN_COMP.filter(k => Math.abs(pts[k] - minimo) < .01) : [],
+    invitacion: total >= 16 && minimo >= 5
+  };
+  return {perfil, detalle, demo:true};
+}
+
+function mostrarGracias(res, prueba){
+  $('#pantalla-examen').hidden = true;
+  $('#marca').hidden = true;
+  $('#pantalla-gracias').hidden = false;
+
+  let h = '<div class="confirma"><span class="palomita"><svg viewBox="0 0 24 24"><path d="M4 12.6l5.2 5.2L20 7"/></svg></span><span>Respuestas registradas</span></div>';
+  if(prueba){
+    const m = /demo([123])/.exec(location.hash), n = m ? +m[1] : 2;
+    res = demoResultado(n);
+    h += '<p class="nota-prueba">Modo de prueba: este resultado y el PDF son de ejemplo, con respuestas y explicaciones de relleno. Aún no hay URL de Apps Script configurada, así que nada se guardó ni se calificó. Para ver otros casos, agrega #demo1, #demo2 o #demo3 al enlace.</p>';
+  }
+  sesion.resultado = res || null;
+  if(res && res.perfil){
+    h += resultadoHTML(res);
+  } else {
+    h += '<h2>Gracias por contestar</h2><p class="lead">Tu diagnóstico ya llegó a la hoja de resultados. Quien coordina la jornada de formación te compartirá tu resultado.</p>';
+  }
+  $('#gracias').innerHTML = h;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('.riel i[data-w]').forEach(i => i.style.width = i.dataset.w + '%')));
+  window.scrollTo(0, 0);
+}
+
+$('#gracias').addEventListener('click', e => { if(e.target.closest('#btn-pdf')) descargarPDF(); });
+
+/* ════════════════════════════════════════════════════════════════
+   PDF de resultados (se genera aquí mismo, sin librerías externas)
+   Helvetica estándar con codificación WinAnsi: cubre acentos, ñ, ¿ ¡ y comillas tipográficas.
+   ════════════════════════════════════════════════════════════════ */
+const ANCHOS = {
+  H:[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584,761,556,556,222,556,333,1000,556,556,333,1000,667,333,1000,556,611,556,556,222,222,333,333,350,556,1000,333,1000,500,333,944,556,500,667,278,333,556,556,556,556,260,556,333,737,370,556,584,333,737,333,400,584,333,333,333,556,537,278,333,333,365,556,834,834,834,611,667,667,667,667,667,667,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,500,556,556,556,556,278,278,278,278,556,556,556,556,556,556,556,584,611,556,556,556,556,500,556,500],
+  B:[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584,761,556,611,278,556,500,1000,556,556,333,1000,667,333,1000,611,611,611,611,278,278,500,500,350,556,1000,333,1000,556,333,944,611,500,667,278,333,556,556,556,556,280,556,333,737,370,556,584,333,737,333,400,584,333,333,333,611,556,278,333,333,365,556,834,834,834,611,722,722,722,722,722,722,1000,722,667,667,667,667,278,278,278,278,722,722,778,778,778,778,778,584,778,722,722,722,722,667,667,611,556,556,556,556,556,556,889,556,556,556,556,556,278,278,278,278,611,611,611,611,611,611,611,584,611,611,611,611,611,556,611,556]
+};
+const CP1252 = {8364:128,8218:130,402:131,8222:132,8230:133,8224:134,8225:135,710:136,8240:137,352:138,8249:139,338:140,381:142,8216:145,8217:146,8220:147,8221:148,8226:149,8211:150,8212:151,732:152,8482:153,353:154,8250:155,339:156,382:158,376:159};
+function byteDe(ch){
+  const c = ch.codePointAt(0);
+  if(c === 10) return 10;
+  if(c < 32) return 32;
+  if(c < 128 || (c >= 160 && c < 256)) return c;
+  return CP1252[c] || 63;
+}
+function anchoTexto(s, size, neg){
+  const T = neg ? ANCHOS.B : ANCHOS.H; let w = 0;
+  for(const ch of s) w += T[byteDe(ch) - 32] || 0;
+  return w * size / 1000;
+}
+function pdfEsc(s){
+  let o = '';
+  for(const ch of s){
+    const b = byteDe(ch);
+    if(b === 40 || b === 41 || b === 92) o += '\\' + String.fromCharCode(b);
+    else if(b < 32 || b > 126) o += '\\' + ('00' + b.toString(8)).slice(-3);
+    else o += String.fromCharCode(b);
+  }
+  return o;
+}
+
+const C_TINTA='#1C1C1E', C_GRIS='#6E6E73', C_AZUL='#0A6AE0', C_AZUL_OSC='#0A4FB0', C_PIZARRA='#4F6D8F', C_GRAFITO='#3A3A3C', C_FONDO='#F2F2F7', C_SUAVE='#E5E5EA', C_AZULCLARO='#E8F1FD', C_APAGADO='#6E6E73';
+
+function nuevoPDF(titulo, pieIzq){
+  const W = 612, H = 792, M = 54, CW = W - 2*M, FONDO = 62;
+  const pags = []; let ops = null, y = 0;
+  const col = hex => { const n = parseInt(hex.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255].map(v => (v/255).toFixed(3)).join(' '); };
+  const pagina = () => { ops = []; pags.push(ops); y = H - M; };
+  const rect = (x, yb, w, h, hex) => ops.push(col(hex) + ' rg ' + x.toFixed(2) + ' ' + yb.toFixed(2) + ' ' + w.toFixed(2) + ' ' + h.toFixed(2) + ' re f');
+  const ptexto = (s, x, base, o) => { o = o || {}; ops.push('BT /' + (o.neg ? 'F2' : 'F1') + ' ' + (o.size || 10) + ' Tf ' + col(o.color || C_TINTA) + ' rg ' + x.toFixed(2) + ' ' + base.toFixed(2) + ' Td (' + pdfEsc(s) + ') Tj ET'); };
+  const derecha = (s, xr, base, o) => { o = o || {}; ptexto(s, xr - anchoTexto(s, o.size || 10, o.neg), base, o); };
+  const necesita = h => { if(y - h < FONDO) pagina(); };
+
+  function lineas(s, ancho, size, neg){
+    const out = [];
+    String(s).split('\n').forEach(par => {
+      let l = '';
+      par.split(/ +/).forEach(p => {
+        const t = l ? l + ' ' + p : p;
+        if(anchoTexto(t, size, neg) <= ancho){ l = t; return; }
+        if(l) out.push(l);
+        /* palabra más ancha que la línea: se parte */
+        l = p;
+        while(anchoTexto(l, size, neg) > ancho && l.length > 1){
+          let k = l.length - 1; while(k > 1 && anchoTexto(l.slice(0, k), size, neg) > ancho) k--;
+          out.push(l.slice(0, k)); l = l.slice(k);
+        }
+      });
+      out.push(l);
+    });
+    return out;
+  }
+
+  function parrafo(s, o){
+    o = o || {};
+    const size = o.size || 10, lead = o.lead || size * 1.42, x = o.x == null ? M : o.x, ancho = o.ancho || (M + CW - x);
+    lineas(s, ancho, size, o.neg).forEach(l => {
+      if(y - lead < FONDO) pagina();
+      ptexto(l, x, y - size, {size, neg:o.neg, color:o.color});
+      y -= lead;
+    });
+    y -= o.gap || 0;
+  }
+
+  /* etiqueta en columna izquierda, texto a la derecha */
+  function fila2(lab, txt, o){
+    o = o || {};
+    const size = o.size || 9.5, lead = size * 1.42, ind = o.ind || 0, x2 = M + ind + 104, ancho = M + CW - x2;
+    const ls = lineas(txt, ancho, size, false);
+    if(y - lead * Math.min(ls.length, 2) < FONDO) pagina();
+    ls.forEach((l, i) => {
+      if(y - lead < FONDO) pagina();
+      if(i === 0 && lab) ptexto(lab, M + ind, y - size, {size, neg:true, color:C_GRIS});
+      ptexto(l, x2, y - size, {size, color:o.color});
+      y -= lead;
+    });
+    y -= o.gap || 0;
+  }
+
+  function construir(){
+    const n = pags.length;
+    pags.forEach((p, i) => {
+      ops = p;
+      rect(M, 44, CW, .6, C_SUAVE);
+      ptexto(pieIzq, M, 32, {size:8, color:C_GRIS});
+      derecha('Página ' + (i + 1) + ' de ' + n, M + CW, 32, {size:8, color:C_GRIS});
+    });
+    const objs = [null, '<< /Type /Catalog /Pages 2 0 R >>', null,
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'];
+    const kids = [];
+    pags.forEach((p, i) => {
+      const pid = 5 + 2*i, cid = 6 + 2*i, flujo = p.join('\n');
+      kids.push(pid + ' 0 R');
+      objs[pid] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + cid + ' 0 R >>';
+      objs[cid] = '<< /Length ' + flujo.length + ' >>\nstream\n' + flujo + '\nendstream';
+    });
+    objs[2] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + n + ' >>';
+    const info = objs.length;
+    objs[info] = '<< /Title (' + pdfEsc(titulo) + ') /Creator (Diagnostico de razonamiento) >>';
+    let out = '%PDF-1.4\n'; const offs = [];
+    for(let i = 1; i < objs.length; i++){ offs[i] = out.length; out += i + ' 0 obj\n' + objs[i] + '\nendobj\n'; }
+    const xref = out.length;
+    out += 'xref\n0 ' + objs.length + '\n0000000000 65535 f \n';
+    for(let i = 1; i < objs.length; i++) out += String(offs[i]).padStart(10, '0') + ' 00000 n \n';
+    out += 'trailer\n<< /Size ' + objs.length + ' /Root 1 0 R /Info ' + info + ' 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+    return new Blob([out], {type:'application/pdf'});
+  }
+
+  pagina();
+  return {
+    M, CW, W, H, rect, ptexto, derecha, necesita, parrafo, fila2, lineas, construir, pagina,
+    y: () => y, avanza: d => { y -= d; }, setY: v => { y = v; }
+  };
+}
+
+/* ── Contenido del PDF ─────────────────────────────────────────── */
+function fechaCorta(iso){
+  const d = new Date(iso), z = n => String(n).padStart(2, '0');
+  return z(d.getDate()) + '/' + z(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+}
+function slug(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase(); }
+function textoOpcion(q, id){ const o = q.opciones.find(x => x[0] === id); return o ? o[1] : ''; }
+function textoItem(q, id){ const o = q.items.find(x => x[0] === id); return o ? o[1] : ''; }
+function etqJuicio(q, v){ return v === 'si' ? q.etiquetas[0] : v === 'no' ? q.etiquetas[1] : 'Sin respuesta'; }
+function etqRel(q, v){ const b = q.banco.find(x => x[0] === v); return b ? b[1] : 'Sin respuesta'; }
+function explItem(x, id){ return x && typeof x === 'object' && x.items ? (x.items[id] || '') : ''; }
+function explGeneral(x){ return typeof x === 'string' ? x : ''; }
+
+function descargarPDF(){
+  const res = sesion && sesion.resultado;
+  if(!res || !res.perfil) return;
+  const p = res.perfil, det = res.detalle || null, d = sesion.datos, r = p.ruta || {}, prio = r.prioridad || [];
+  const paq = ultimoPaquete || {};
+  const pdf = nuevoPDF('Diagnóstico de razonamiento · ' + d.nombre, 'Diagnóstico de razonamiento · ' + d.nombre + ' · código ' + sesion.codigo);
+  const M = pdf.M, CW = pdf.CW;
+
+  /* Encabezado */
+  pdf.rect(0, pdf.H - 92, pdf.W, 92, C_AZUL);
+  pdf.rect(0, pdf.H - 96, pdf.W, 4, C_AZUL_OSC);
+  pdf.ptexto('Diagnóstico de razonamiento', M, pdf.H - 46, {size:22, neg:true, color:'#FFFFFF'});
+  pdf.ptexto('Tus resultados y la explicación de cada reactivo', M, pdf.H - 68, {size:11.5, color:'#D6E6FB'});
+  pdf.setY(pdf.H - 96 - 26);
+
+  if(res.demo){
+    const t = 'Modo de prueba: este documento es de ejemplo, con respuestas y explicaciones de relleno.';
+    const ls = pdf.lineas(t, CW - 24, 9.5, true);
+    pdf.rect(M, pdf.y() - ls.length * 14 - 12, CW, ls.length * 14 + 12, C_AZULCLARO);
+    pdf.avanza(8); pdf.parrafo(t, {size:9.5, neg:true, color:C_AZUL_OSC, x:M + 12, ancho:CW - 24}); pdf.avanza(20);
+  }
+
+  [['Nombre', d.nombre], ['Correo', d.correo], ['Programa o área', d.programa],
+   ['Fecha de aplicación', paq.fecha ? fechaCorta(paq.fecha) : ''], ['Código de sesión', sesion.codigo], ['Folio de envío', paq.envioId || '']]
+    .forEach(f => { if(!f[1]) return; pdf.ptexto(f[0], M, pdf.y() - 9, {size:9, neg:true, color:C_GRIS}); pdf.ptexto(f[1], M + 118, pdf.y() - 10, {size:10.5}); pdf.avanza(17); });
+  pdf.avanza(10);
+
+  /* Resultado por competencia */
+  pdf.necesita(190);
+  pdf.parrafo('Resultado por competencia', {size:13, neg:true, color:C_AZUL, gap:8});
+  ORDEN_COMP.forEach(k => {
+    const x = p[k]; if(!x) return;
+    const foco = prio.indexOf(k) >= 0 && prio.length < 3;
+    pdf.necesita(64);
+    const y0 = pdf.y();
+    pdf.ptexto(NOMBRE_COMP[k], M, y0 - 12, {size:12, neg:true});
+    if(foco) pdf.ptexto('Área para fortalecer', M + 84, y0 - 12, {size:9.5, neg:true, color:C_AZUL_OSC});
+    pdf.derecha(x.aciertos + ' de 6 aciertos' + (x.parciales ? ' · ' + x.parciales + (x.parciales === 1 ? ' parcial' : ' parciales') : '') + ' · ' + fmtNum(x.pts) + ' de 6 puntos', M + CW, y0 - 11.5, {size:9.5, color:C_GRIS});
+    pdf.avanza(20);
+    pdf.rect(M, pdf.y() - 7, CW, 7, C_SUAVE);
+    pdf.rect(M, pdf.y() - 7, Math.max(0, Math.min(1, x.pts / 6)) * CW, 7, foco ? C_AZUL_OSC : C_AZUL);
+    pdf.avanza(15);
+    const linea = foco ? FORTALECER[k] : ((LINEAS[k] && LINEAS[k][x.nivel]) || '');
+    if(linea) pdf.parrafo(linea, {size:9.5, color:C_GRIS, gap:8}); else pdf.avanza(6);
+  });
+  pdf.parrafo('En total: ' + p.aciertos + ' de 18 reactivos acertados por completo, con ' + fmtNum(p.total) + ' de 18 puntos.', {size:10, neg:true, gap:3});
+  pdf.parrafo(fraseArea(p), {size:10, gap:12});
+
+  /* Qué sigue */
+  {
+    const t1 = 'Asiste a la ' + DESTINO.charAt(0).toLowerCase() + DESTINO.slice(1) + '. Entrega este documento al profesor del curso: con él tendrá un diagnóstico de tu punto de partida y podrá acompañarte mejor.';
+    const extra = [];
+    if(r.curso) extra.push('Para quien imparte el curso. Ubicación sugerida en la ruta de formación: Curso ' + r.curso + ' · ' + CURSOS[r.curso] + '.' + (prio.length && prio.length < 3 ? ' Módulo por el que conviene empezar: ' + listaNombres(prio) + '.' : ''));
+    if(r.invitacion) extra.push('El perfil de esta persona encaja con el equipo docente de la materia Pensamiento Analítico y Lógico.');
+    const l1 = pdf.lineas(t1, CW - 28, 10.5, false), l2 = extra.map(e => pdf.lineas(e, CW - 28, 9.5, false));
+    const alto = 18 + 10 + l1.length * 14.9 + l2.reduce((a, b) => a + b.length * 13.5 + 5, 0) + 12;
+    pdf.necesita(alto + 8);
+    pdf.rect(M, pdf.y() - alto, CW, alto, C_FONDO);
+    pdf.rect(M, pdf.y() - alto, 4, alto, C_AZUL);
+    pdf.avanza(12);
+    pdf.parrafo('Tu siguiente paso', {size:12, neg:true, color:C_AZUL, x:M + 16, gap:4});
+    pdf.parrafo(t1, {size:10.5, x:M + 16, ancho:CW - 28, gap:6});
+    extra.forEach(e => pdf.parrafo(e, {size:9.5, color:C_GRIS, x:M + 16, ancho:CW - 28, gap:3}));
+    pdf.avanza(14);
+  }
+
+  /* Cómo leer este documento */
+  pdf.necesita(110);
+  pdf.parrafo('Cómo leer este documento', {size:13, neg:true, color:C_AZUL, gap:5});
+  [
+    'Este diagnóstico no aprueba ni reprueba. Muestra en qué áreas conviene fortalecer el razonamiento, para que la jornada de formación te sirva más.',
+    'Un acierto es un reactivo contestado correctamente por completo. En los reactivos de varias respuestas puede haber un acierto parcial: suma una fracción de punto. Al final del documento se explica cómo se calcula cada tipo de reactivo.',
+    'En todos los reactivos las premisas se toman como verdaderas, aunque no lo parezcan. Lo que se evalúa es qué se sigue de ellas.'
+  ].forEach(t => { pdf.necesita(pdf.lineas(t, CW - 14, 10, false).length * 14.2 + 6); const y0 = pdf.y(); pdf.ptexto('•', M, y0 - 10, {size:10}); pdf.parrafo(t, {size:10, x:M + 14, gap:4}); });
+  pdf.avanza(8);
+
+  /* Detalle por reactivo */
+  if(det){
+    pdf.necesita(280);
+    pdf.parrafo('Detalle de cada reactivo', {size:16, neg:true, gap:6});
+    pdf.parrafo('A continuación aparece cada reactivo como lo viste: el planteamiento, tu respuesta, la respuesta correcta y la explicación. Los reactivos están numerados en el orden en que se te presentaron, y las opciones aparecen en el mismo orden en que las viste.', {size:10, color:C_GRIS, gap:10});
+
+    COMPETENCIAS.forEach(c => {
+      pdf.necesita(300);
+      pdf.rect(M, pdf.y() - 22, CW, 22, C_SUAVE);
+      pdf.ptexto(c.nombre, M + 10, pdf.y() - 15, {size:12, neg:true, color:C_AZUL});
+      pdf.avanza(34);
+      sesion.orden.filter(id => QS[id].comp === c.id).forEach(id => reactivoPDF(pdf, QS[id], sesion.orden.indexOf(id) + 1, det[id]));
+    });
+  }
+
+  /* Cómo se calcula */
+  pdf.necesita(200);
+  pdf.parrafo('Cómo se calcula cada reactivo', {size:13, neg:true, color:C_AZUL, gap:6});
+  [
+    ['Opción única, encontrar el paso que falla y completar el argumento', '1 punto si se elige la respuesta correcta; 0 si no.'],
+    ['Ordenar los pasos', '1 punto si el orden es exactamente el correcto; 0 si no.'],
+    ['Selección múltiple', 'Cada opción correcta que marcas suma; cada opción que marcas de más resta. El resultado se divide entre el número de opciones correctas y no baja de 0. Ejemplo: con 3 correctas, si marcas 2 bien y 1 de más, obtienes (2 − 1) / 3 = 0.33.'],
+    ['Válido o no válido, y se sigue o no se sigue', 'Cada afirmación bien contestada suma y cada una mal contestada resta; las que se dejan en blanco no restan. Se divide entre el número de afirmaciones y no baja de 0. Ejemplo: con 5 afirmaciones, 4 bien y 1 mal, obtienes (4 − 1) / 5 = 0.6.'],
+    ['Relacionar', 'Número de casos bien relacionados entre el total de casos.'],
+    ['Aciertos', 'Cuenta un reactivo como acierto cuando obtuvo 1 punto completo. Un acierto parcial es un reactivo con más de 0 y menos de 1 punto.']
+  ].forEach(f => { pdf.necesita(52); pdf.parrafo(f[0], {size:9.5, neg:true, gap:1}); pdf.parrafo(f[1], {size:9.5, color:C_GRIS, x:M + 10, gap:6}); });
+  pdf.avanza(6);
+  pdf.parrafo('¿Tienes una duda sobre un reactivo? Anota su número y tu código de sesión (' + sesion.codigo + ') y coméntalo con el profesor del curso. Con ese código se localiza tu envío.', {size:10, color:C_GRIS});
+
+  const blob = pdf.construir();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'diagnostico-razonamiento-' + slug(d.nombre) + '-' + sesion.codigo + '.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+function reactivoPDF(pdf, q, n, dt){
+  const M = pdf.M, CW = pdf.CW, v = sesion.vista[q.id], r = sesion.resp[q.id];
+  const p = dt ? dt.p : 0;
+  const estado = p >= .999 ? 'Acierto' : p > 0 ? 'Acierto parcial' : 'Por reforzar';
+  const colE = p >= .999 ? C_AZUL : p > 0 ? C_PIZARRA : C_APAGADO;
+  /* Reserva lo que ocupan encabezado, planteamiento y consigna, más un mínimo para las respuestas. */
+  const est = 25 + pdf.lineas(q.enunciado, CW, 10, false).length * 14.2 + (q.premisas || []).length * 14 + pdf.lineas(q.consigna, CW, 10, true).length * 14.2 + 100;
+  pdf.necesita(Math.min(est, 420));
+  const y0 = pdf.y();
+  pdf.ptexto('Reactivo ' + n + ' · ' + q.etiqueta, M, y0 - 11, {size:11, neg:true});
+  pdf.derecha(estado + ' · ' + fmtNum(p) + (p === 1 ? ' punto' : ' de 1 punto'), M + CW, y0 - 11, {size:9.5, neg:true, color:colE});
+  pdf.avanza(17);
+  pdf.rect(M, pdf.y(), CW, .7, C_SUAVE);
+  pdf.avanza(8);
+
+  pdf.parrafo(q.enunciado, {size:10, gap:4});
+  (q.premisas || []).forEach(pr => {
+    const lab = Array.isArray(pr) ? pr[0] : '';
+    let t = Array.isArray(pr) ? pr[1] : pr;
+    if(t.charAt(0) === '~') t = '(falta una premisa)';
+    pdf.fila2(lab, t, {size:9.5, ind:8});
+  });
+  pdf.avanza(3);
+  pdf.parrafo(q.consigna, {size:10, neg:true, gap:6});
+
+  const k = dt.k, x = dt.x, sub = M + 8 + 104;
+  const marca = (ok) => ok ? C_AZUL : C_GRAFITO;
+
+  if(q.tipo === 'una'){
+    pdf.fila2('Tu respuesta', r ? textoOpcion(q, r) : 'Sin respuesta.', {size:9.5, gap:2});
+    pdf.fila2('Respuesta correcta', textoOpcion(q, k), {size:9.5, gap:2});
+    pdf.fila2('Explicación', explGeneral(x), {size:9.5, color:C_GRIS, gap:2});
+  } else if(q.tipo === 'multi'){
+    v.opc.forEach((id, i) => {
+      const marcada = !!r && r.indexOf(id) >= 0, correcta = k.indexOf(id) >= 0;
+      pdf.fila2(LETRAS[i] + '.', textoOpcion(q, id), {size:9.5, ind:8});
+      pdf.parrafo('Tu respuesta: ' + (marcada ? 'marcada' : 'sin marcar') + '. Lo correcto: ' + (correcta ? 'marcarla' : 'dejarla sin marcar') + '.', {size:9, neg:true, x:sub, color:marca(marcada === correcta)});
+      const e = explItem(x, id); pdf.parrafo(e, {size:9, x:sub, color:C_GRIS, gap:5});
+    });
+    if(explGeneral(x)) pdf.fila2('Explicación', explGeneral(x), {size:9.5, color:C_GRIS, gap:2});
+  } else if(q.tipo === 'juicio' || q.tipo === 'rel'){
+    const et = q.tipo === 'juicio' ? etqJuicio : etqRel;
+    v.items.forEach(id => {
+      const mia = r ? r[id] : undefined, ok = k[id];
+      pdf.parrafo(textoItem(q, id), {size:9.5, x:M + 8, ancho:CW - 8, gap:1});
+      pdf.parrafo('Tu respuesta: ' + et(q, mia) + '. Respuesta correcta: ' + et(q, ok) + '.', {size:9, neg:true, x:M + 8, color:marca(mia === ok)});
+      pdf.parrafo(explItem(x, id), {size:9, x:M + 8, color:C_GRIS, gap:5});
+    });
+    if(explGeneral(x)) pdf.fila2('Explicación', explGeneral(x), {size:9.5, color:C_GRIS, gap:2});
+  } else if(q.tipo === 'orden'){
+    const mapa = Object.fromEntries(q.pasos);
+    const mio = sesion.tocado[q.id] ? v.pasos : null;
+    pdf.parrafo('Tu orden', {size:9.5, neg:true, color:C_GRIS, gap:1});
+    if(mio) mio.forEach((id, i) => pdf.fila2((i + 1) + '.', mapa[id], {size:9.5, ind:8, color:mio[i] === k[i] ? C_TINTA : C_GRAFITO}));
+    else pdf.parrafo('Sin respuesta.', {size:9.5, x:M + 8});
+    pdf.avanza(3);
+    pdf.parrafo('Orden correcto', {size:9.5, neg:true, color:C_GRIS, gap:1});
+    k.forEach((id, i) => pdf.fila2((i + 1) + '.', mapa[id], {size:9.5, ind:8}));
+    pdf.avanza(3);
+    pdf.fila2('Explicación', explGeneral(x), {size:9.5, color:C_GRIS, gap:2});
+  }
+  pdf.avanza(14);
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   9. Pantalla completa, pausa y vigilancia
+   ════════════════════════════════════════════════════════════════ */
+const raiz = document.documentElement;
+function enPC(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function pedirPC(){
+  const f = raiz.requestFullscreen || raiz.webkitRequestFullscreen;
+  if(!f) return Promise.reject(new Error('sin-api'));
+  try{ const r = f.call(raiz, {navigationUI:'hide'}); return (r && r.then) ? r : Promise.resolve(); }
+  catch(err){ return Promise.reject(err); }
+}
+function salirPC(){
+  const f = document.exitFullscreen || document.webkitExitFullscreen;
+  if(f && enPC()){ try{ const r = f.call(document); if(r && r.catch) r.catch(()=>{}); }catch(e){} }
+}
+
+function pausar(motivo, mensaje){
+  if(!enExamen || pausado || Date.now() - ultimoIngreso < 800) return;
+  cerrarTiempo();
+  pausado = true; pausaDesde = Date.now();
+  registrar(motivo);
+  $('#pausa-msg').textContent = mensaje || 'Saliste de la pantalla completa o cambiaste de ventana. El tiempo se detuvo y la salida quedó registrada.';
+  $('#pausa').hidden = false;
+}
+
+function reanudar(){
+  const listo = () => {
+    pausado = false;
+    sesion.pausaSeg += (Date.now() - pausaDesde) / 1000;
+    ultimoIngreso = Date.now();
+    sesion.tInicio = Date.now();
+    $('#pausa').hidden = true;
+  };
+  if(!CFG.pantallaCompleta){ listo(); return; }
+  pedirPC().then(listo).catch(() => {
+    $('#pausa-msg').textContent = 'No se pudo volver a pantalla completa. Toca el botón de nuevo.';
+  });
+}
+$('#btn-reanudar').addEventListener('click', reanudar);
+
+['fullscreenchange','webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+  if(CFG.pantallaCompleta && enExamen && !enPC()) pausar('sale_pantalla_completa');
+}));
+window.addEventListener('blur', () => pausar('pierde_foco', 'Cambiaste de ventana o de aplicación. El tiempo se detuvo y la salida quedó registrada.'));
+document.addEventListener('visibilitychange', () => { if(document.hidden) pausar('pestana_oculta', 'Cambiaste de pestaña. El tiempo se detuvo y la salida quedó registrada.'); });
+
+setInterval(() => {
+  if(!CFG.vigilarConsola || !enExamen || pausado || !enPC()) return;
+  if(window.outerWidth - window.innerWidth > 200 || window.outerHeight - window.innerHeight > 200){
+    pausar('consola_abierta', 'Se detectó una herramienta de desarrollo abierta. Ciérrala y vuelve al examen.');
+  }
+}, 1500);
+
+window.addEventListener('beforeunload', e => { if(enExamen){ e.preventDefault(); e.returnValue = ''; } });
+
+/* ════════════════════════════════════════════════════════════════
+   10. Protección contra copia
+   ════════════════════════════════════════════════════════════════ */
+function dentroDeCampo(e){ return !!(e.target && e.target.closest && e.target.closest('input,textarea')); }
+
+['copy','cut','paste','dragstart','selectstart','contextmenu'].forEach(ev => document.addEventListener(ev, e => {
+  if(dentroDeCampo(e) && ev !== 'contextmenu' && ev !== 'dragstart') return;
+  e.preventDefault();
+  if(enExamen && ev !== 'selectstart') registrar(ev);
+}, true));
+
+function cortina(ms){
+  $('#cortina').hidden = false;
+  setTimeout(() => { $('#cortina').hidden = true; }, ms || 2200);
+}
+
+document.addEventListener('keydown', e => {
+  const k = (e.key || '').toLowerCase(), ctrl = e.ctrlKey || e.metaKey, campo = dentroDeCampo(e);
+  let nombre = '';
+  if(e.key === 'F12') nombre = 'f12';
+  else if(e.key === 'PrintScreen') nombre = 'captura';
+  else if(ctrl && ['p','s','u'].indexOf(k) >= 0) nombre = 'ctrl+' + k;
+  else if(ctrl && !campo && ['c','x','a'].indexOf(k) >= 0) nombre = 'ctrl+' + k;
+  else if(ctrl && e.shiftKey && ['i','j','c','k'].indexOf(k) >= 0) nombre = 'consola';
+  else if(e.metaKey && e.shiftKey && ['Digit3','Digit4','Digit5'].indexOf(e.code) >= 0) nombre = 'captura';
+  if(!nombre) return;
+  e.preventDefault(); e.stopPropagation();
+  if(enExamen){ registrar('tecla:' + nombre); if(nombre === 'captura') cortina(); }
+}, true);
+
+document.addEventListener('keyup', e => {
+  if(e.key !== 'PrintScreen') return;
+  try{ const r = navigator.clipboard && navigator.clipboard.writeText(' '); if(r && r.catch) r.catch(()=>{}); }catch(err){}
+  if(enExamen){ registrar('captura'); cortina(); }
+});
+
+/* Marca de agua: nombre, correo y código de sesión repetidos en diagonal. */
+function ponerMarca(){
+  if(!CFG.marcaDeAgua) return;
+  const d = sesion.datos;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="460" height="210">' +
+    '<g transform="rotate(-24 230 105)" font-family="-apple-system,Helvetica,Arial,sans-serif" font-weight="600" text-anchor="middle" fill="#2E2350" fill-opacity="0.085">' +
+    '<text x="230" y="98" font-size="15">' + esc(d.nombre) + '</text>' +
+    '<text x="230" y="120" font-size="12.5">' + esc(d.correo) + '  ·  ' + sesion.codigo + '</text></g></svg>';
+  const m = $('#marca');
+  m.style.backgroundImage = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '")';
+  m.hidden = false;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   11. Portada: validación e inicio
+   ════════════════════════════════════════════════════════════════ */
+function equipoValido(){
+  const lado = Math.max(screen.width || 0, screen.height || 0);
+  if(lado < CFG.anchoMinimo) return 'Este diagnóstico se contesta en una computadora o tableta grande. Ábrelo desde ahí.';
+  if(CFG.pantallaCompleta && !(raiz.requestFullscreen || raiz.webkitRequestFullscreen)) return 'Este navegador no permite pantalla completa. Usa la versión más reciente de Chrome, Edge, Safari o Firefox en una computadora.';
+  return '';
+}
+
+let equipoOk = true, conexionOk = SIN_CONFIGURAR;   // en modo de prueba no hay nada que comprobar
+function actualizarInicio(){ $('#btn-comenzar').disabled = !(equipoOk && conexionOk); }
+
+(function(){
+  const m = equipoValido();
+  if(m){ const a = $('#aviso-equipo'); a.textContent = m; a.hidden = false; equipoOk = false; }
+  actualizarInicio();
+})();
+
+function estadoConexion(clase, texto, reintento){
+  const c = $('#conexion'); c.hidden = false; c.className = 'conexion ' + clase;
+  $('#conexion-txt').textContent = texto; $('#btn-reconectar').hidden = !reintento;
+}
+
+/* Antes de dejar contestar, se comprueba que la hoja responde y que el script publicado es el esperado. */
+async function comprobarConexion(){
+  if(SIN_CONFIGURAR || !equipoOk) return;
+  conexionOk = false; actualizarInicio();
+  estadoConexion('prueba', 'Comprobando la conexión con la hoja de resultados…', false);
+  const r = await jsonp({accion:'ping'}, 25000);      // el primer arranque del script puede tardar
+  if(!r) return estadoConexion('falla', 'No se pudo conectar con la hoja de resultados. Avisa a quien coordina antes de comenzar.', true);
+  if(r.ok === false) return estadoConexion('falla', 'La hoja de resultados respondió con un error. Avisa a quien coordina antes de comenzar. Detalle: ' + String(r.error || '').replace(/^Error:\s*/, ''), true);
+  if(r.version !== VERSION_SCRIPT) return estadoConexion('falla', 'El script de la hoja de resultados está desactualizado (publicado: ' + (r.version || 'versión anterior') + '; esperado: ' + VERSION_SCRIPT + '). Avisa a quien coordina antes de comenzar.', true);
+  conexionOk = true; actualizarInicio();
+  estadoConexion('lista', 'Conexión con la hoja de resultados lista.', false);
+}
+$('#btn-reconectar').addEventListener('click', comprobarConexion);
+
+/* Diagnóstico para quien administra: abre la página con #diagnostico al final del enlace. */
+async function diagnosticar(){
+  const ul = $('#diag-lista'), btn = $('#btn-diag');
+  ul.innerHTML = ''; btn.disabled = true;
+  const linea = (ok, titulo, detalle) => { const li = document.createElement('li');
+    li.innerHTML = '<span class="ins' + (ok ? '' : ' mal') + '">' + (ok ? 'Correcto' : 'Revisar') + '</span> ' + esc(titulo) + (detalle ? '<small>' + esc(detalle) + '</small>' : '');
+    ul.appendChild(li); };
+  try{
+    if(SIN_CONFIGURAR){ linea(false, 'Falta la URL de Apps Script', 'Pega la URL que termina en /exec en la constante URL_APPS_SCRIPT de index.html y vuelve a subirlo a GitHub.'); return; }
+    linea(true, 'URL configurada', URL_APPS_SCRIPT.length > 60 ? URL_APPS_SCRIPT.slice(0, 44) + '…' + URL_APPS_SCRIPT.slice(-14) : URL_APPS_SCRIPT);
+    if(!/\/exec$/.test(URL_APPS_SCRIPT)) linea(false, 'La URL no termina en /exec', 'Usa la URL de la implementación web (Implementar → Administrar implementaciones), no la de prueba (/dev) ni la del editor.');
+
+    const r = await jsonp({accion:'ping'}, 25000);
+    if(!r){ linea(false, 'El script no responde', 'Revisa que la URL sea la correcta, que el acceso sea “Cualquier persona” (no “con cuenta de Google”) y que la implementación esté activa. Ábrela en una ventana de incógnito: debe mostrar un texto con “Aplicación web activa” y no pedir iniciar sesión.'); return; }
+    linea(true, 'El script responde');
+    if(r.ok === false){ linea(false, 'El script reportó un error', String(r.error || '')); return; }
+    if(r.version === VERSION_SCRIPT) linea(true, 'La versión publicada es la esperada', VERSION_SCRIPT);
+    else linea(false, 'La versión publicada no es la de esta página', 'Publicada: ' + (r.version || 'anterior a la 2026-11-10.2') + '. Esperada: ' + VERSION_SCRIPT + '. Pega el Codigo.gs nuevo y publica una versión nueva (Implementar → Administrar implementaciones → lápiz → Versión: Nueva → Implementar).');
+    linea(true, 'Está ligado a la hoja “' + (r.libro || '?') + '”', 'Pestaña de resultados: ' + (r.hoja || '?') + ' · filas guardadas: ' + (r.filas === undefined ? '?' : r.filas) + '. Las respuestas caen en la pestaña “' + (r.hoja || 'Respuestas') + '” de esa hoja, no en la primera.');
+
+    const id = 'prueba-' + Math.random().toString(36).slice(2, 10);
+    const enviado = await publicar({prueba:true, envioId:id, fecha:new Date().toISOString()});
+    if(!enviado){ linea(false, 'No se pudo enviar el paquete de prueba', 'Revisa la conexión a internet y que ninguna extensión del navegador bloquee script.google.com.'); return; }
+    let ok = null;
+    for(let i = 0; i < 4 && !(ok && ok.ok); i++){ await espera(i === 0 ? 1500 : 2200); ok = await verificar(id); }
+    if(ok && ok.ok) linea(true, 'El script puede escribir en la hoja', 'Se guardó un paquete de prueba en la pestaña Respaldo (puedes borrarlo).');
+    else linea(false, 'El script responde pero no pudo escribir en la hoja', 'Abre el editor de Apps Script, ejecuta la función prepararHoja una vez y autoriza los permisos; después publica una versión nueva.');
+  } finally { btn.disabled = false; }
+}
+if(/diagnostico/i.test(location.hash)){ $('#diag').hidden = false; $('#btn-diag').addEventListener('click', diagnosticar); }
+comprobarConexion();
+
+function marcar(id, malo){ $('#' + id).classList.toggle('malo', malo); return !malo; }
+['nombre','correo','programa'].forEach(id => $('#' + id).addEventListener('input', () => $('#c-' + id).classList.remove('malo')));
+
+$('#formulario').addEventListener('submit', e => e.preventDefault());
+
+$('#btn-comenzar').addEventListener('click', () => {
+  const nombre = $('#nombre').value.trim().replace(/\s+/g,' '), correo = $('#correo').value.trim(), programa = $('#programa').value.trim();
+  let ok = true;
+  ok = marcar('c-nombre',   nombre.length < 5 || nombre.indexOf(' ') < 0) && ok;
+  ok = marcar('c-correo',   !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(correo)) && ok;
+  ok = marcar('c-programa', programa.length < 2) && ok;
+  if(!ok){ const f = document.querySelector('.campo.malo'); if(f) f.scrollIntoView({behavior:'smooth', block:'center'}); return; }
+
+  const arrancar = () => {
+    sesion = construir({nombre, correo, programa});
+    ponerMarca();
+    $('#pantalla-inicio').hidden = true;
+    $('#pantalla-examen').hidden = false;
+    enExamen = true; pausado = false; ultimoIngreso = Date.now();
+    mostrarParte(sesion.orden.length ? QS[sesion.orden[0]].comp : 'A', 0);
+  };
+
+  if(!CFG.pantallaCompleta){ arrancar(); return; }
+  /* Debe pedirse dentro del gesto del clic. */
+  pedirPC().then(arrancar).catch(() => {
+    const a = $('#aviso-equipo');
+    a.textContent = 'No se pudo activar la pantalla completa. Permítela en el navegador y vuelve a intentar.';
+    a.hidden = false;
+  });
+});
+</script>
+</body>
+</html>
